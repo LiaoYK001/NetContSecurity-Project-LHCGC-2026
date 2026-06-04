@@ -29,13 +29,13 @@
 
 每位成员按自己的指南逐日执行即可。指南正文保持全中文，文件名采用中英双语，方便在仓库中快速识别。
 
-| 成员 | 个人指南 |
-| --- | --- |
-| 成员 A | [数据与文本模型指南](成员A数据与文本模型指南Member-A-Data-Text-Guide.md) |
-| 成员 B | [图像与多模态融合指南](成员B图像与多模态融合指南Member-B-Image-Fusion-Guide.md) |
+| 成员   | 个人指南                                                                              |
+| ------ | ------------------------------------------------------------------------------------- |
+| 成员 A | [数据与文本模型指南](成员A数据与文本模型指南Member-A-Data-Text-Guide.md)              |
+| 成员 B | [图像与多模态融合指南](成员B图像与多模态融合指南Member-B-Image-Fusion-Guide.md)       |
 | 成员 C | [系统集成与评测指南](成员C系统集成与评测指南Member-C-Integration-Evaluation-Guide.md) |
-| 成员 D | [报告撰写指南](成员D报告撰写指南Member-D-Report-Writing-Guide.md) |
-| 成员 E | [PPT 与答辩指南](成员EPPT与答辩指南Member-E-Slides-Defense-Guide.md) |
+| 成员 D | [报告撰写指南](成员D报告撰写指南Member-D-Report-Writing-Guide.md)                     |
+| 成员 E | [PPT 与答辩指南](成员EPPT与答辩指南Member-E-Slides-Defense-Guide.md)                  |
 
 ## 4. 7 天开发 + 后 3-5 天输出流程
 
