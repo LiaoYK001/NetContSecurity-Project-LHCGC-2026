@@ -23,7 +23,12 @@ uv run python -c "import torch, transformers, pandas, sklearn; print('env ok')"
 │   ├── 网络内容安全任务概述.md
 │   ├── [Google-Gemini]网络安全研究分工参考.md
 │   ├── 人员分工参考Team-Responsibility-Reference.md
-│   └── 项目入手指南.md
+│   ├── 项目入手指南.md
+│   ├── 成员A数据与文本模型指南Member-A-Data-Text-Guide.md
+│   ├── 成员B图像与多模态融合指南Member-B-Image-Fusion-Guide.md
+│   ├── 成员C系统集成与评测指南Member-C-Integration-Evaluation-Guide.md
+│   ├── 成员D报告撰写指南Member-D-Report-Writing-Guide.md
+│   └── 成员EPPT与答辩指南Member-E-Slides-Defense-Guide.md
 ├── .env.example
 ├── .gitignore
 ├── .python-version
@@ -57,6 +62,14 @@ src/               # 数据处理、训练、推理、评估代码
 详细分工见 [document/人员分工参考Team-Responsibility-Reference.md](document/人员分工参考Team-Responsibility-Reference.md)。
 
 详细技术路线见 [document/项目入手指南.md](document/项目入手指南.md)。
+
+个人落地指南：
+
+- [成员 A 数据与文本模型指南](document/成员A数据与文本模型指南Member-A-Data-Text-Guide.md)
+- [成员 B 图像与多模态融合指南](document/成员B图像与多模态融合指南Member-B-Image-Fusion-Guide.md)
+- [成员 C 系统集成与评测指南](document/成员C系统集成与评测指南Member-C-Integration-Evaluation-Guide.md)
+- [成员 D 报告撰写指南](document/成员D报告撰写指南Member-D-Report-Writing-Guide.md)
+- [成员 E PPT 与答辩指南](document/成员EPPT与答辩指南Member-E-Slides-Defense-Guide.md)
 
 ## Public Repository Rules
 
