@@ -40,3 +40,5 @@ mlruns/
 *.tmp
 ~$*
 /.vscode
+document/开发组协作流程.pdf
+document/开发组协作流程.html
