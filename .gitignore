@@ -1,1 +1,41 @@
 /.specstory
+
+# Python and uv
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Local secrets. Keep .env.example committed.
+.env
+.env.*
+!.env.example
+
+# Local datasets and crawl outputs
+data/raw/
+data/interim/
+data/processed/
+data/external/
+crawls/
+scrapy_output/
+downloads/
+
+# Model artifacts and experiment outputs
+models/
+checkpoints/
+outputs/
+runs/
+wandb/
+mlruns/
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.onnx
+
+# Large generated reports or temporary exports
+*.tmp
+~$*
