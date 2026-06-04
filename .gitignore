@@ -39,3 +39,4 @@ mlruns/
 # Large generated reports or temporary exports
 *.tmp
 ~$*
+/.vscode
