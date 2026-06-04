@@ -1,0 +1,119 @@
+flowchart LR
+    %% 工程分工与主流程图：基于多模态社交网络的内容风控与异常检测
+
+    subgraph INPUT["项目输入"]
+        COURSE["课程要求<br/>网络信息采集、文本倾向分析、用户影响力评价"]
+        PUBLIC_DATA["公开数据集<br/>Hugging Face、Kaggle、GitHub、论文数据"]
+        CRAWL["合规爬虫补充<br/>只采集公开页面并脱敏"]
+    end
+
+    subgraph DEV["3人硬核开发组：第1天到第7天"]
+        A["成员 A<br/>数据与文本模型"]
+        A_DATA["数据清洗与脱敏<br/>字段规范、去重、划分训练/验证/测试"]
+        A_TEXT_BASE["文本基线模型<br/>TF-IDF + 逻辑回归"]
+        A_TEXT_DEEP["文本深度模型<br/>BERT / 中文 RoBERTa"]
+        A_BEHAVIOR["用户行为特征<br/>发帖频率、互动比、重复比例、链接数"]
+
+        B["成员 B<br/>图像与多模态融合"]
+        B_IMAGE["图像预处理<br/>读取、尺寸归一化、缺失图片处理"]
+        B_RESNET["图像模型<br/>ResNet18 / ResNet50 特征提取"]
+        B_OCR["OCR可选路线<br/>图片文字转入文本分支"]
+        B_FUSION["多模态融合<br/>文本向量 + 图像向量 + 行为特征 + MLP"]
+
+        C["成员 C<br/>系统集成与评测"]
+        C_PIPELINE["统一实验流程<br/>命令、目录、随机种子、实验记录"]
+        C_METRICS["指标评估<br/>准确率、精确率、召回率、F1值"]
+        C_FIGURES["图表导出<br/>混淆矩阵、ROC/PR曲线、消融实验、错误案例"]
+        FREEZE["第7天代码冻结交接包<br/>数据说明、模型说明、指标表、图表、复现命令"]
+    end
+
+    subgraph DOCS["2人报告答辩组：第1天准备，第8天到第12天封装"]
+        D["成员 D<br/>报告撰写与排版"]
+        D_OUTLINE["报告框架<br/>绪论、相关技术、数据、系统、实验、总结"]
+        D_ANALYSIS["实验分析<br/>图表引用、结果解释、局限性、成员分工"]
+        D_FINAL["报告终稿<br/>格式统一、编号正确、技术复核"]
+
+        E["成员 E<br/>PPT与答辩"]
+        E_SLIDES["PPT结构<br/>问题、方法、数据、结果、总结、分工"]
+        E_SCRIPT["讲稿与演示<br/>规定时间内讲清主线"]
+        E_QA["答辩问答<br/>数据合规、模型选择、指标解释、局限性"]
+    end
+
+    subgraph OUTPUT["最终交付"]
+        REPORT["报告终稿"]
+        PPT["PPT终稿"]
+        QA["答辩问答表"]
+        REPRO["可复现实验说明"]
+        FINAL_PACKAGE["最终提交包<br/>文档、图表、脱敏样例、复现说明"]
+    end
+
+    subgraph PRIVACY["public仓库隐私边界"]
+        LOCAL_ONLY["只保存在本地<br/>data、models、outputs、.env、原始爬虫输出"]
+        PUBLIC_REPO["允许提交到GitHub<br/>代码、配置模板、脱敏样例、说明文档、小体积图表"]
+    end
+
+    COURSE --> D_OUTLINE
+    COURSE --> E_SLIDES
+    PUBLIC_DATA --> A
+    CRAWL --> A
+
+    A --> A_DATA
+    A_DATA --> A_TEXT_BASE
+    A_DATA --> A_TEXT_DEEP
+    A_DATA --> A_BEHAVIOR
+
+    A_DATA --> B_IMAGE
+    B --> B_IMAGE
+    B_IMAGE --> B_RESNET
+    B_IMAGE --> B_OCR
+    A_TEXT_DEEP --> B_FUSION
+    A_BEHAVIOR --> B_FUSION
+    B_RESNET --> B_FUSION
+    B_OCR --> A_TEXT_DEEP
+
+    A_TEXT_BASE --> C_PIPELINE
+    A_TEXT_DEEP --> C_PIPELINE
+    B_RESNET --> C_PIPELINE
+    B_FUSION --> C_PIPELINE
+    C --> C_PIPELINE
+    C_PIPELINE --> C_METRICS
+    C_METRICS --> C_FIGURES
+    C_FIGURES --> FREEZE
+
+    FREEZE --> D_ANALYSIS
+    D --> D_OUTLINE
+    D_OUTLINE --> D_ANALYSIS
+    D_ANALYSIS --> D_FINAL
+
+    FREEZE --> E_SLIDES
+    E --> E_SLIDES
+    E_SLIDES --> E_SCRIPT
+    E_SCRIPT --> E_QA
+
+    D_FINAL --> REPORT
+    E_SLIDES --> PPT
+    E_QA --> QA
+    FREEZE --> REPRO
+    REPORT --> FINAL_PACKAGE
+    PPT --> FINAL_PACKAGE
+    QA --> FINAL_PACKAGE
+    REPRO --> FINAL_PACKAGE
+
+    A_DATA -.本地数据不提交.-> LOCAL_ONLY
+    B_RESNET -.模型权重不提交.-> LOCAL_ONLY
+    C_FIGURES -.大体积输出不提交.-> LOCAL_ONLY
+    D_FINAL -.报告与脱敏图表可提交.-> PUBLIC_REPO
+    E_SLIDES -.PPT与讲稿可提交.-> PUBLIC_REPO
+    REPRO -.复现说明可提交.-> PUBLIC_REPO
+
+    classDef input fill:#eef6ff,stroke:#3b6ea8,stroke-width:1px,color:#102a43
+    classDef dev fill:#f3fbf4,stroke:#3f8f55,stroke-width:1px,color:#14351f
+    classDef docs fill:#fff7e8,stroke:#b87816,stroke-width:1px,color:#3d2b05
+    classDef output fill:#f7f0ff,stroke:#7a55b5,stroke-width:1px,color:#2f1a4f
+    classDef privacy fill:#fff1f1,stroke:#b94a48,stroke-width:1px,color:#4a1414
+
+    class COURSE,PUBLIC_DATA,CRAWL input
+    class A,A_DATA,A_TEXT_BASE,A_TEXT_DEEP,A_BEHAVIOR,B,B_IMAGE,B_RESNET,B_OCR,B_FUSION,C,C_PIPELINE,C_METRICS,C_FIGURES,FREEZE dev
+    class D,D_OUTLINE,D_ANALYSIS,D_FINAL,E,E_SLIDES,E_SCRIPT,E_QA docs
+    class REPORT,PPT,QA,REPRO,FINAL_PACKAGE output
+    class LOCAL_ONLY,PUBLIC_REPO privacy

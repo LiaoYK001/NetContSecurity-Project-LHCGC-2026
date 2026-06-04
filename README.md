@@ -4,6 +4,8 @@
 
 当前仓库是 public。提交前必须确认没有真实数据、密钥、cookie、账号信息、未脱敏样本或大体积模型文件。
 
+工程分工和主流程见 [Architecture.mmd](Architecture.mmd)。
+
 ## Quick Start
 
 项目使用 `uv` 管理 Python 环境，默认 Python 版本为 3.11。
@@ -19,6 +21,7 @@ uv run python -c "import torch, transformers, pandas, sklearn; print('env ok')"
 
 ```text
 .
+├── Architecture.mmd
 ├── document/
 │   ├── 网络内容安全任务概述.md
 │   ├── [Google-Gemini]网络安全研究分工参考.md
