@@ -27,6 +27,11 @@ uv run python -c "import torch, transformers, pandas, sklearn; print('env ok')"
 │   ├── [Google-Gemini]网络安全研究分工参考.md
 │   ├── 人员分工参考Team-Responsibility-Reference.md
 │   ├── 项目入手指南.md
+│   ├── 开发组角色选择说明.md             ← 新增：A/B/C怎么选角色
+│   ├── 开发组协作指南.md                 ← 新增：A/B/C如何配合
+│   ├── 开发组协作流程.mmd                ← VS Code预览：甘特图
+│   ├── 开发组协作流程-流程图.mmd          ← VS Code预览：流程图
+│   ├── 开发组协作流程.md                 ← 完整版：4幅图+说明
 │   ├── 成员A数据与文本模型指南Member-A-Data-Text-Guide.md
 │   ├── 成员B图像与多模态融合指南Member-B-Image-Fusion-Guide.md
 │   ├── 成员C系统集成与评测指南Member-C-Integration-Evaluation-Guide.md
@@ -63,6 +68,8 @@ src/               # 数据处理、训练、推理、评估代码
 - 成员 E：PPT、讲稿和答辩。
 
 详细分工见 [document/人员分工参考Team-Responsibility-Reference.md](document/人员分工参考Team-Responsibility-Reference.md)。
+
+开发组三人协作（接口约定、依赖链、每天谁等谁）见 **[document/开发组协作指南.md](document/开发组协作指南.md)**，协作流程图见 **[document/开发组协作流程.mmd](document/开发组协作流程.mmd)**。
 
 详细技术路线见 [document/项目入手指南.md](document/项目入手指南.md)。
 

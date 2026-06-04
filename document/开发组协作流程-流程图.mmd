@@ -1,0 +1,106 @@
+flowchart TB
+    %% 开发组3人协作流程图：数据流转与依赖关系
+
+    subgraph DAY12["第1-2天：基础准备"]
+        direction LR
+        AGREE["三人统一约定<br/>标签:normal/risk<br/>CSV格式:5列<br/>image_path:相对路径"]
+        C_SPEC["成员C 定规范<br/>目录结构、命令命名<br/>文件格式、实验记录表"]
+        A_DATA["成员A 数据清洗<br/>找公开数据集<br/>去重、脱敏、统一字段<br/>→ dataset_v1.csv"]
+        B_IMG_SPEC["成员B 定图像规范<br/>图片尺寸224x224<br/>缺失图片处理方案"]
+    end
+
+    subgraph DAY34["第3-4天：单模态并行"]
+        direction LR
+        A_TFIDF["成员A 文本基线<br/>TF-IDF+逻辑回归<br/>→ text_tfidf_pred.csv"]
+        A_BERT["成员A 深度文本<br/>BERT/中文RoBERTa<br/>→ 文本向量维度N<br/>→ text_bert_pred.csv"]
+        B_RESNET["成员B 图像模型<br/>ResNet18/50特征提取<br/>冻结预训练权重<br/>→ image_resnet_pred.csv"]
+        C_EVAL["成员C 单模态评估<br/>收A文本预测+ B图像预测<br/>检查sample_id一致性<br/>算准确率/精确率/召回率/F1"]
+    end
+
+    subgraph DAY5["第5天：多模态融合 核心依赖日"]
+        direction LR
+        A_BEHAVIOR["成员A 行为特征<br/>发帖频率、链接数量<br/>重复比例、互动比<br/>→ behavior_features.csv"]
+        A_HANDOFF["成员A 交付<br/>文本向量CSV<br/>行为特征CSV<br/>⚠️ B融合的前置条件"]
+        B_FUSION["成员B 多模态融合<br/>文本向量+图像向量+行为特征<br/>拼接→MLP分类器<br/>→ fusion_pred.csv"]
+        C_FUSION_EVAL["成员C 融合评估<br/>文本 vs 图像 vs 融合<br/>同一张对比指标表<br/>反馈效果给A和B"]
+    end
+
+    subgraph DAY6["第6天：消融实验与图表"]
+        direction LR
+        ABLATION["5组消融对比<br/>①仅文本 ②仅图像 ③仅行为<br/>④文本+图像 ⑤全部特征"]
+        A_ERROR["成员A<br/>文本误判案例<br/>行为特征分析"]
+        B_ERROR["成员B<br/>图像误判案例<br/>融合分析"]
+        C_CHARTS["成员C 画图出表<br/>混淆矩阵<br/>ROC/PR曲线<br/>消融柱状图<br/>错误案例汇总"]
+    end
+
+    subgraph DAY7["第7天：代码冻结与交接"]
+        direction LR
+        FREEZE["代码冻结<br/>不再大改模型<br/>git tag v1.0-freeze"]
+        A_FINAL["成员A 最终交付<br/>数据说明<br/>文本模型说明<br/>300-500字技术解释"]
+        B_FINAL["成员B 最终交付<br/>图像模型说明<br/>融合方法说明<br/>模型结构图<br/>300-500字技术解释"]
+        C_HANDOFF["成员C 打包交接<br/>数据说明 模型说明<br/>最终指标表 图表清单<br/>错误案例 复现命令"]
+    end
+
+    subgraph OUTPUT["最终交付给报告答辩组"]
+        D["成员D<br/>报告撰写"]
+        E["成员E<br/>PPT与答辩"]
+    end
+
+    subgraph FALLBACK["保底路线"]
+        FB_A["A保底: TF-IDF替代BERT"]
+        FB_B["B保底: 分数加权替代MLP拼接"]
+        FB_C["C保底: 手动汇总替代自动化"]
+    end
+
+    %% 第1-2天 连接
+    AGREE --> C_SPEC
+    AGREE --> A_DATA
+    AGREE --> B_IMG_SPEC
+    C_SPEC --> A_DATA
+    A_DATA -->|"CSV含image_path"| B_IMG_SPEC
+
+    %% 第3-4天 连接
+    A_DATA -->|"同一份数据"| A_TFIDF
+    A_DATA -->|"同一份数据"| B_RESNET
+    A_TFIDF -->|"预测CSV"| C_EVAL
+    A_TFIDF --> A_BERT
+    A_BERT -->|"文本向量"| A_HANDOFF
+    B_RESNET -->|"预测CSV"| C_EVAL
+    B_RESNET -->|"图像向量"| B_FUSION
+    C_EVAL --> C_FUSION_EVAL
+
+    %% 第5天 连接
+    A_BERT -->|"文本向量维度N"| A_HANDOFF
+    A_BEHAVIOR -->|"行为特征"| A_HANDOFF
+    A_HANDOFF -->|"文本向量CSV<br/>行为特征CSV"| B_FUSION
+    B_FUSION -->|"融合预测CSV"| C_FUSION_EVAL
+    C_FUSION_EVAL -->|"对比指标表"| ABLATION
+
+    %% 第6天 连接
+    ABLATION --> C_CHARTS
+    A_ERROR --> C_CHARTS
+    B_ERROR --> C_CHARTS
+
+    %% 第7天 连接
+    C_CHARTS --> FREEZE
+    A_ERROR --> A_FINAL
+    B_ERROR --> B_FINAL
+    A_TFIDF --> A_FINAL
+    A_BERT --> A_FINAL
+    A_BEHAVIOR --> A_FINAL
+    B_RESNET --> B_FINAL
+    B_FUSION --> B_FINAL
+    FREEZE --> A_FINAL
+    FREEZE --> B_FINAL
+    A_FINAL --> C_HANDOFF
+    B_FINAL --> C_HANDOFF
+    FREEZE --> C_HANDOFF
+
+    %% 最终交付
+    C_HANDOFF -->|"交接包"| D
+    C_HANDOFF -->|"交接包"| E
+
+    %% 保底路线
+    A_TFIDF -.->|"若BERT跑不动"| FB_A
+    B_FUSION -.->|"若拼接MLP写不出"| FB_B
+    C_CHARTS -.->|"若自动化失败"| FB_C
