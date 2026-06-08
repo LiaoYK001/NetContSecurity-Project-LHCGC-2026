@@ -169,7 +169,15 @@ def run_check(input_path: Path, output_path: Path, image_root: Path, limit: int 
         )
         return 2
 
-    df = pd.read_csv(input_path)
+df = pd.read_csv(
+        input_path,
+        dtype={
+            "sample_id": "string",
+            "image_path": "string",
+            "label": "string",
+            "split": "string",
+        },
+    )
     validate_dataframe(df, input_path)
 
     if limit is not None:
