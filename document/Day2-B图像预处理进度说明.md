@@ -12,7 +12,7 @@
 | Day1 目录脚手架 | 已完成 | 已建立 `data/`、`outputs/`、`models/`、`src/` 占位结构 |
 | Day1 实验记录模板 | 已完成 | 已建立 `outputs/metrics/experiment_log_template.csv` |
 | Day2 B 图片预处理框架 | 已完成 | 新增 `src/extract_image_features.py` |
-| Day2 A 数据交付 | 等待中 | 当前仓库没有真实 `data/processed/dataset_v1.csv` |
+| Day2 A 数据交付 | 已完成 | 见 [Day2-A给B数据格式交接说明.md](Day2-A给B数据格式交接说明.md)；本地应有 `data/processed/dataset_v1.csv`（7723 行） |
 
 ## 2. B 今天完成的内容
 
@@ -71,9 +71,11 @@ sample_id,image_path,status,message,width,height,mode
 
 注意：`outputs/` 中的真实检查结果不会提交到 Git。
 
-## 4. 等待 A 的内容
+## 4. A 数据交接（已就绪）
 
-B 现在需要 A 提供本地数据样例：
+字段与文件含义见 **[Day2-A给B数据格式交接说明.md](Day2-A给B数据格式交接说明.md)**。
+
+主表路径：
 
 ```text
 data/processed/dataset_v1.csv
@@ -91,7 +93,7 @@ B 实际需要读取：
 sample_id,image_path,label,split
 ```
 
-A 交付后，B 立刻运行：
+B 拿到本地 CSV 后立刻运行：
 
 ```powershell
 uv run python src/extract_image_features.py --input data/processed/dataset_v1.csv --limit 20
@@ -120,4 +122,4 @@ sample_id,true_label,pred_label,risk_prob,model_name
 - [x] 支持无数据时提示等待 A 的 CSV。
 - [x] 支持缺失图片和损坏图片记录状态。
 - [x] 输出路径位于 `outputs/`，不会提交真实检查结果。
-- [ ] 等 A 提供 `dataset_v1.csv` 后，完成真实样本的前 20 条检查。
+- [ ] 使用本地 `dataset_v1.csv` 完成真实样本的前 20 条检查（见 Day2-A 交接说明）。
