@@ -15,18 +15,44 @@ __pycache__/
 !.env.example
 
 # Local datasets and crawl outputs
-data/raw/
-data/interim/
-data/processed/
-data/external/
+data/*
+!data/raw/
+data/raw/*
+!data/raw/.gitkeep
+!data/interim/
+data/interim/*
+!data/interim/.gitkeep
+!data/processed/
+data/processed/*
+!data/processed/.gitkeep
+!data/external/
+data/external/*
+!data/external/.gitkeep
 crawls/
 scrapy_output/
 downloads/
 
 # Model artifacts and experiment outputs
-models/
+models/*
+!models/.gitkeep
 checkpoints/
-outputs/
+outputs/*
+!outputs/predictions/
+outputs/predictions/*
+!outputs/predictions/.gitkeep
+!outputs/predictions/ablation/
+outputs/predictions/ablation/*
+!outputs/predictions/ablation/.gitkeep
+!outputs/metrics/
+outputs/metrics/*
+!outputs/metrics/.gitkeep
+!outputs/metrics/experiment_log_template.csv
+!outputs/figures/
+outputs/figures/*
+!outputs/figures/.gitkeep
+!outputs/handoff/
+outputs/handoff/*
+!outputs/handoff/.gitkeep
 runs/
 wandb/
 mlruns/

@@ -1,0 +1,2 @@
+experiment_id,date,owner,model_name,data_version,input_path,output_path,accuracy,precision,recall,f1,notes
+exp_001,2026-06-08,C,text_tfidf,dataset_v1,outputs/predictions/text_tfidf_pred.csv,outputs/metrics/final_metrics.csv,,,,,Day3 text baseline placeholder
