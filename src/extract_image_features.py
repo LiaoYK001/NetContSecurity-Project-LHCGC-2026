@@ -144,8 +144,7 @@ def check_one_image(row: pd.Series, image_root: Path) -> ImageCheckResult:
             tensor = preprocess(image_rgb)
             if tuple(tensor.shape) != (3, 224, 224):
                 raise RuntimeError(f"unexpected tensor shape: {tuple(tensor.shape)}")
-    except (OSError, UnidentifiedImageError, RuntimeError) as exc:
-        return ImageCheckResult(
+    except (OSError, UnidentifiedImageError, RuntimeError, ImportError) as exc:
             sample_id=sample_id,
             image_path=display_path,
             status="image_error",
