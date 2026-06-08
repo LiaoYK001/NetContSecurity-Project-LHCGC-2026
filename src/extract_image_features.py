@@ -34,15 +34,21 @@ class ImageCheckResult:
 
 
 def build_preprocess():
+    cached = getattr(build_preprocess, "_cached", None)
+    if cached is not None:
+        return cached
+
     from torchvision import transforms
 
-    return transforms.Compose(
+    cached = transforms.Compose(
         [
             transforms.Resize((IMAGE_SIZE, IMAGE_SIZE)),
             transforms.ToTensor(),
             transforms.Normalize(mean=NORMALIZE_MEAN, std=NORMALIZE_STD),
         ]
     )
+    build_preprocess._cached = cached
+    return cached
 
 
 def parse_args() -> argparse.Namespace:
