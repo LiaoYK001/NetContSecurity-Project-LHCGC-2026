@@ -2,7 +2,7 @@
 
 适用角色：成员 B（图像与多模态融合）  
 撰写人：成员 A  
-日期：2026-06-08  
+日期：2026-06-09  
 范围：仅说明 `data/processed/` 目录下的表与 JSON；`outputs/` 中的向量与 Day3 预测见 [Day3-A文本与行为进度说明.md](Day3-A文本与行为进度说明.md)。
 
 相关规格：[Day1-ABC开发组接口与任务规格.md](Day1-ABC开发组接口与任务规格.md)
@@ -11,39 +11,88 @@
 
 ## 0. 一句话总结
 
-- **数据来源**：公开微博谣言数据集，经 `src/prepare_data.py` 从 `weibo/` 原始文件解析并清洗。
+- **数据来源**：[EANN-KDD18](https://github.com/yaqingwang/EANN-KDD18) 公开的 **Weibo 多模态假新闻检测数据集**（KDD 2018 论文 *EANN: Event Adversarial Neural Networks for Multi-Modal Fake News Detection*），经 `src/prepare_data.py` 从本地 `weibo/` 原始文件解析并清洗。完整名称、下载链接与目录约定见 **§0.1**。
 - **样本量**：7723 条（已去掉空文本）；主键为 **`sample_id`**（微博 `tweet_id`，字符串）。
 - **B 最该先看**：[`data/processed/dataset_v1.csv`](../data/processed/dataset_v1.csv) —— 含 `image_path`、`label`、`split`，与 Day1 最小字段集一致。
 - **多图场景**：查 [`data/processed/all_images.csv`](../data/processed/all_images.csv)。
 - **汇总数字**：见 [`data/processed/dataset_stats.json`](../data/processed/dataset_stats.json)。
 
+### 0.1 原始数据集（全名与获取方式）
+
+| 项目 | 内容 |
+| --- | --- |
+| 数据集名称 | EANN-KDD18 Weibo 多模态假新闻 / 谣言检测数据集 |
+| 论文 | Wang et al., *EANN: Event Adversarial Neural Networks for Multi-Modal Fake News Detection*, KDD 2018 |
+| 官方 GitHub | [https://github.com/yaqingwang/EANN-KDD18](https://github.com/yaqingwang/EANN-KDD18) |
+| 完整数据下载 | [Google Drive（约 1.3GB）](https://drive.google.com/file/d/14VQ7EWPiFeGzxp3XC2DeEHi-BEisDINn/view?usp=sharing)（链接见上述仓库 README → *Dataset*） |
+| 仓库内示例子集 | 官方仓库 `data/` 目录为 quick start 子集；本组实验使用解压后的完整 Weibo 包 |
+
+**本组本地 `weibo/` 目录结构**（与官方包一致，`prepare_data.py --weibo-root weibo`）：
+
+| 路径 | 说明 |
+| --- | --- |
+| `weibo/tweets/train_rumor.txt`、`train_nonrumor.txt`、`test_rumor.txt`、`test_nonrumor.txt` | 文本与元数据（每 3 行一条：meta \| image_urls \| text） |
+| `weibo/train_id.pickle`、`validate_id.pickle`、`test_id.pickle` | 官方 train / val / test 划分（`validate_id` → 本组 `val`） |
+| `weibo/rumor_images/`、`weibo/nonrumor_images/` | 谣言 / 非谣言配图本地文件 |
+
+**标签映射**（`prepare_data.py` 与官方 rumor/nonrumor 一致）：
+
+| 官方 | 本组 `label` |
+| --- | --- |
+| rumor（谣言） | `risk` |
+| nonrumor（非谣言） | `normal` |
+
+**引用**（论文或报告中注明数据来源时可使用）：
+
+```bibtex
+@inproceedings{wang2018eann,
+  title={EANN: Event Adversarial Neural Networks for Multi-Modal Fake News Detection},
+  author={Wang, Yaqing and Ma, Fenglong and Jin, Zhiwei and Yuan, Ye and Xun, Guangxu and Jha, Kishlay and Su, Lu and Gao, Jing},
+  booktitle={Proceedings of the 24th ACM SIGKDD International Conference on Knowledge Discovery \& Data Mining},
+  pages={849--857},
+  year={2018},
+  organization={ACM}
+}
+```
+
 ---
 
-## 1. 文件总览与关系
+## 1. 清洗后文件总览
 
-| 文件 | 行数（约） | 粒度 | 生成脚本 | B 是否必读 |
-| --- | --- | --- | --- | --- |
-| `dataset_v1.csv` | 7723 | 1 行 = 1 样本 | `prepare_data.py` | **是（主表）** |
-| `all_images.csv` | 12713 | 1 行 = 1 张图（按 `image_index`） | `prepare_data.py` | 多图时需要 |
-| `text_samples.csv` | 7723 | 1 行 = 1 样本 | `prepare_data.py` | 否（A 文本分支用） |
-| `behavior_features.csv` | 7723 | 1 行 = 1 样本 | `prepare_data.py` | 否（行为原始特征） |
-| `behavior_features_enriched.csv` | 7723 | 1 行 = 1 样本 | `extract_behavior_features.py` | 否（A 扩展行为特征） |
-| `dataset_stats.json` | — | 全库统计 | `prepare_data.py` | 建议扫一眼 |
+| 文件 | 行数（约） | 含义 | 谁用 |
+| --- | --- | --- | --- |
+| `dataset_v1.csv` | 7723 | 主样本表：一条微博 = 一行。含清洗后 `text`、首张本地图 `image_path`、`label`、`split` 等 | **B 必读**；C 评估对齐也靠 `sample_id` |
+| `all_images.csv` | 12713 | 多图展开表：同一 `sample_id` 可有多行，每行一张图（`image_index` 0,1,2…） | B 做多图实验时用；主表只保留 index=0 |
+| `text_samples.csv` | 7723 | 纯文本表：`sample_id` + `text` + `label` + `split`（与主表同批样本） | A 跑 TF-IDF / BERT；B 融合不读，用 A 的 `text_embeddings.csv` |
+| `behavior_features.csv` | 7723 | 行为原始特征（未标准化）：转发/评论/点赞、粉丝、文本长度、URL 数等 | A 行为分析；B 融合不读，用 A 的 `behavior_embeddings.csv` |
+| `dataset_stats.json` | — | 全库统计：样本数、标签/划分分布、有图无图数量、各文件路径 | 快速自检 |
+
+**生成上述 processed 文件**（需先按 §0.1 准备 [EANN-KDD18](https://github.com/yaqingwang/EANN-KDD18) Weibo 数据至 `weibo/`）：
+
+```bash
+uv run python src/prepare_data.py --weibo-root weibo --output-dir data/processed --handoff-dir outputs/handoff
+```
+
+**A 产出给 B 融合的两份向量 CSV**（依赖上一步；详见 [Day3-A文本与行为进度说明.md](Day3-A文本与行为进度说明.md)）：
+
+```bash
+uv run python src/extract_text_features.py
+uv run python src/extract_behavior_features.py
+```
 
 ```mermaid
 flowchart LR
-  subgraph raw [weibo 原始数据]
+  subgraph raw [EANN-KDD18 weibo 原始数据]
     tweets[tweets/*.txt]
     pickles[train/val/test_id.pickle]
     imgdir[rumor/nonrumor_images]
   end
   prepare[prepare_data.py]
-  enrich[extract_behavior_features.py]
+  behvec[extract_behavior_features.py]
   subgraph processed [data/processed]
     v1[dataset_v1.csv]
     text[text_samples.csv]
     beh[behavior_features.csv]
-    enriched[behavior_features_enriched.csv]
     imgs[all_images.csv]
     stats[dataset_stats.json]
   end
@@ -55,8 +104,8 @@ flowchart LR
   prepare --> beh
   prepare --> imgs
   prepare --> stats
-  beh --> enrich
-  enrich --> enriched
+  beh --> behvec
+  behvec --> beh_emb[behavior_embeddings.csv]
 ```
 
 说明：`prepare_data.py` 同时会写 `outputs/handoff/images_manifest.csv`（等于 `dataset_v1` 的 `sample_id,image_path,label,split` 四列），内容与主表图片列一致，本文不单独展开。
@@ -103,7 +152,7 @@ flowchart LR
 | `text` | string | 否 | 清洗后正文（去除 URL、手机号、邮箱、`@用户` 等，见 `prepare_data.clean_text`） |
 | `image_path` | string | 是 | **首张**本地匹配图片的相对路径；无图则为空字符串 `""` |
 | `label` | string | 否 | `normal` 或 `risk` |
-| `source` | string | 否 | 固定为 `weibo_rumor_dataset` |
+| `source` | string | 否 | 固定为 `weibo_rumor_dataset`（对应 [EANN-KDD18](https://github.com/yaqingwang/EANN-KDD18) Weibo 数据，见 §0.1） |
 | `split` | string | 否 | `train` / `val` / `test` |
 
 **示例行**（节选）：
@@ -201,43 +250,7 @@ sample_id,label,split,verified,reposts,comments,likes,engagement_total,interacti
 
 ---
 
-### 3.5 `behavior_features_enriched.csv`（A 扩展行为特征，未标准化）
-
-**用途**：在 §3.4 基础上由 `extract_behavior_features.py` 增加衍生列（重复文本比例、用户发帖频率代理、互动构成比、敏感词计数等）。仍为**原始尺度**；标准化后的融合向量在 `outputs/predictions/behavior_embeddings.csv`（A 另交，不在本文）。
-
-**粒度**：1 行 = 1 个 `sample_id`（7723 行，与主表一致）。
-
-**列结构**：`sample_id`, `label`, `split` + 下列 **27 个特征列**（与 `beh_emb_000` … `beh_emb_026` 一一对应）：
-
-| 字段 | 含义 |
-| --- | --- |
-| `verified` | 同 §3.4 |
-| `reposts`, `comments`, `likes` | 同 §3.4 |
-| `engagement_total`, `interaction_ratio` | 同 §3.4 |
-| `followers`, `following`, `posts_count` | 同 §3.4 |
-| `num_image_urls`, `text_length` | 同 §3.4 |
-| `link_count` | 链接数（来自 `url_mentions`） |
-| `mention_count` | `@` 提及数（来自 `at_mentions`） |
-| `fan_follow_ratio` | 粉丝数 / max(关注数, 1) |
-| `engagement_per_char` | 总互动 / max(文本长度, 1) |
-| `engagement_per_follower` | 总互动 / max(粉丝数, 1) |
-| `like_share` | 点赞占总互动比例 |
-| `comment_share` | 评论占总互动比例 |
-| `repost_share` | 转发占总互动比例 |
-| `repeat_ratio` | 与同正文样本重复程度（全库归一化） |
-| `is_duplicate_text` | 正文是否在库内重复（0/1） |
-| `user_post_count` | 该用户在数据集中出现次数 |
-| `user_post_frequency` | 用户发帖频率代理 |
-| `hours_since_first_post` | 相对该用户首条帖的小时数 |
-| `has_local_image` | 主表是否有本地图（0/1） |
-| `image_link_ratio` | 图片 URL 数相对链接+图片 URL 的比例 |
-| `sensitive_word_count` | 命中预设敏感词表的次数 |
-
-B 若只做图像分支，可忽略本表；第 5 天融合时由 A 提供标准化后的 `behavior_embeddings.csv` 即可。
-
----
-
-### 3.6 `dataset_stats.json`（机器可读汇总）
+### 3.5 `dataset_stats.json`（机器可读汇总）
 
 **用途**：快速查看导出规模、标签与划分分布、各产物路径；写报告或自检时用。
 
@@ -289,24 +302,7 @@ python3 src/extract_image_features.py --input data/processed/dataset_v1.csv --li
 
 ## 6. 如何重新生成
 
-**主表与基础 processed 文件**（需先有 `weibo/` 原始数据）：
-
-```bash
-python3 src/prepare_data.py --weibo-root weibo --output-dir data/processed --handoff-dir outputs/handoff
-```
-
-**扩展行为表**（依赖上一步产出的 `behavior_features.csv` 等）：
-
-```bash
-python3 src/extract_behavior_features.py \
-  --behavior-input data/processed/behavior_features.csv \
-  --text-input data/processed/text_samples.csv \
-  --dataset-input data/processed/dataset_v1.csv \
-  --weibo-root weibo \
-  --enriched-output data/processed/behavior_features_enriched.csv
-```
-
-若环境已配置 `uv`，可将 `python3` 换成 `uv run python`。
+见 §1「清洗后文件总览」中的命令。完整 A 侧流水线（含 TF-IDF 基线）见 [Day3-A文本与行为进度说明.md](Day3-A文本与行为进度说明.md)。
 
 ---
 
@@ -314,4 +310,6 @@ python3 src/extract_behavior_features.py \
 
 | 日期 | 版本 | 变更人 | 说明 |
 | --- | --- | --- | --- |
-| 2026-06-08 | v1.0 | 成员 A | 首版：覆盖 `data/processed/` 六类产物，供 B Day2 图像预处理与后续 ResNet 使用 |
+| 2026-06-09 | v1.2 | 成员 A | 新增 §0.1：写明 EANN-KDD18 数据集全名、GitHub / Google Drive 链接、本地 `weibo/` 约定及 BibTeX |
+| 2026-06-09 | v1.1 | 成员 A | 删除 `behavior_features_enriched.csv`；补充 processed 文件含义表与向量生成命令 |
+| 2026-06-08 | v1.0 | 成员 A | 首版：覆盖 `data/processed/` 产物，供 B Day2 图像预处理与后续 ResNet 使用 |
