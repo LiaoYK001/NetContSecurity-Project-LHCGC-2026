@@ -15,6 +15,7 @@ __pycache__/
 !.env.example
 
 # Local datasets and crawl outputs
+weibo/*
 data/*
 !data/raw/
 data/raw/*
@@ -68,3 +69,5 @@ mlruns/
 /.vscode
 document/开发组协作流程.pdf
 document/开发组协作流程.html
+weibo.zip
+prepare_data.py

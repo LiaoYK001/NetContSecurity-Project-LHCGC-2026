@@ -34,21 +34,15 @@ class ImageCheckResult:
 
 
 def build_preprocess():
-    cached = getattr(build_preprocess, "_cached", None)
-    if cached is not None:
-        return cached
-
     from torchvision import transforms
 
-    cached = transforms.Compose(
+    return transforms.Compose(
         [
             transforms.Resize((IMAGE_SIZE, IMAGE_SIZE)),
             transforms.ToTensor(),
             transforms.Normalize(mean=NORMALIZE_MEAN, std=NORMALIZE_STD),
         ]
     )
-    build_preprocess._cached = cached
-    return cached
 
 
 def parse_args() -> argparse.Namespace:
@@ -145,6 +139,7 @@ def check_one_image(row: pd.Series, image_root: Path) -> ImageCheckResult:
             if tuple(tensor.shape) != (3, 224, 224):
                 raise RuntimeError(f"unexpected tensor shape: {tuple(tensor.shape)}")
     except (OSError, UnidentifiedImageError, RuntimeError, ImportError) as exc:
+        return ImageCheckResult(
             sample_id=sample_id,
             image_path=display_path,
             status="image_error",
@@ -174,7 +169,7 @@ def run_check(input_path: Path, output_path: Path, image_root: Path, limit: int 
         )
         return 2
 
-df = pd.read_csv(
+    df = pd.read_csv(
         input_path,
         dtype={
             "sample_id": "string",
