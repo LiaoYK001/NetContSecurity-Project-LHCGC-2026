@@ -1,4 +1,4 @@
-# NetContSecurity Project LHCGC 2026
+# BJTU NetContSecurity Project LHCGC 2026
 
 本仓库用于课程项目“基于多模态社交网络的内容风控与异常检测”。目标是结合文本内容、图像/OCR 信息和用户行为特征，识别垃圾广告、诈骗信息、异常账号或其他有害内容。
 
