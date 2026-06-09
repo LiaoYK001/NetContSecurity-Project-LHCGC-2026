@@ -224,8 +224,8 @@ def run(args: argparse.Namespace) -> int:
         "pred_output": str(pred_output),
         "rows": int(len(df)),
         "vocabulary_size": int(len(vectorizer.vocabulary_)),
-        "class_distribution": df["label"].value_counts().to_dict(),
-        "split_counts": df["split"].value_counts().to_dict(),
+        "class_distribution": {k: int(v) for k, v in df["label"].value_counts().items()},
+        "split_counts": {k: int(v) for k, v in df["split"].value_counts().items()},
     }
     split_metrics: dict[str, object] = {}
     label_order = ["normal", "risk"]

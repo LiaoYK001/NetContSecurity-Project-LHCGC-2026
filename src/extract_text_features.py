@@ -1,9 +1,8 @@
 """Extract Chinese text embeddings with BERT / RoBERTa (member A, standard plan).
 
 Reads ``data/processed/text_samples.csv`` (or ``dataset_v1.csv``), outputs:
-  - outputs/predictions/text_embeddings.csv   (sample_id + txt_emb_*)
+  - outputs/predictions/text_embeddings.csv   (sample_id + txt_emb_* plus label/split/status/message)
   - outputs/predictions/text_bert_pred.csv      (optional classifier on train split)
-
 The backbone stays frozen by default. A lightweight logistic head is trained only
 on the train split when ``--train-classifier`` is set.
 """

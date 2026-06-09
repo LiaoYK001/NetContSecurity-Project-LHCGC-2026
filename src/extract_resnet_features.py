@@ -273,7 +273,15 @@ def run(args: argparse.Namespace) -> int:
     if args.model != "resnet18":
         raise ValueError("Day3 scaffold currently supports only --model resnet18")
 
-    df = pd.read_csv(input_path)
+    df = pd.read_csv(
+        input_path,
+        dtype={
+            "sample_id": "string",
+            "image_path": "string",
+            "label": "string",
+            "split": "string",
+        },
+    )
     validate_dataframe(df, input_path)
 
     if args.split:

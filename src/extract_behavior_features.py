@@ -4,9 +4,8 @@ Reads ``data/processed/behavior_features.csv`` from prepare_data.py, applies
 StandardScaler (fit on train split), and writes vectors for member B fusion.
 
 Outputs:
-  - outputs/predictions/behavior_embeddings.csv     (sample_id + beh_emb_*)
+  - outputs/predictions/behavior_embeddings.csv     (sample_id + beh_emb_* plus label/split/status/message)
   - outputs/predictions/behavior_feature_meta.json  (feature names + scaler stats)
-"""
 
 from __future__ import annotations
 
@@ -109,6 +108,11 @@ def run(args: argparse.Namespace) -> int:
         behavior_path,
         dtype={"sample_id": "string", "label": "string", "split": "string"},
     )
+    missing = sorted(META_COLUMNS - set(behavior_df.columns))
+    if missing:
+        raise ValueError(
+            f"{behavior_path} is missing required columns: {', '.join(missing)}"
+        )
     if args.limit is not None:
         if args.limit <= 0:
             raise ValueError("--limit must be positive")

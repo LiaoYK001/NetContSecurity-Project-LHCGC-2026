@@ -138,7 +138,7 @@ def check_one_image(row: pd.Series, image_root: Path) -> ImageCheckResult:
             tensor = preprocess(image_rgb)
             if tuple(tensor.shape) != (3, 224, 224):
                 raise RuntimeError(f"unexpected tensor shape: {tuple(tensor.shape)}")
-    except (OSError, UnidentifiedImageError, RuntimeError) as exc:
+    except (OSError, UnidentifiedImageError, RuntimeError, ImportError) as exc:
         return ImageCheckResult(
             sample_id=sample_id,
             image_path=display_path,
@@ -169,7 +169,15 @@ def run_check(input_path: Path, output_path: Path, image_root: Path, limit: int 
         )
         return 2
 
-    df = pd.read_csv(input_path)
+    df = pd.read_csv(
+        input_path,
+        dtype={
+            "sample_id": "string",
+            "image_path": "string",
+            "label": "string",
+            "split": "string",
+        },
+    )
     validate_dataframe(df, input_path)
 
     if limit is not None:
