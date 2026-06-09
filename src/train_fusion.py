@@ -92,7 +92,11 @@ def parse_args() -> argparse.Namespace:
 
 
 def parse_feature_groups(raw: str) -> list[str]:
-    groups = [group.strip() for group in raw.split(",") if group.strip()]
+    raw_groups = [group.strip() for group in raw.split(",") if group.strip()]
+    groups: list[str] = []
+    for group in raw_groups:
+        if group not in groups:
+            groups.append(group)
     if not groups:
         raise ValueError("--feature-groups 至少需要包含一个模态")
     unknown = sorted(set(groups) - AVAILABLE_FEATURE_GROUPS)
@@ -116,6 +120,15 @@ def read_dataset(path: Path, limit: int | None) -> pd.DataFrame:
     missing = sorted(REQUIRED_DATASET_COLUMNS - set(df.columns))
     if missing:
         raise ValueError(f"{path} 缺少必要字段：{', '.join(missing)}")
+
+    if df["sample_id"].duplicated().any():
+        example = df.loc[df["sample_id"].duplicated(), "sample_id"].astype(str).iloc[0]
+        raise ValueError(f"{path} sample_id 存在重复值，例如：{example}")
+
+    labels = set(df["label"].astype(str).unique())
+    if not labels.issubset({"normal", "risk"}):
+        raise ValueError(f"{path} label 只能是 normal/risk，当前得到：{sorted(labels)}")
+
     if limit is not None:
         if limit <= 0:
             raise ValueError("--limit 必须为正数")
@@ -137,6 +150,8 @@ def merge_embeddings(base: pd.DataFrame, path: Path, prefix: str, name: str) -> 
         raise FileNotFoundError(f"缺少{name}：{path}")
 
     emb_df = pd.read_csv(path, dtype={"sample_id": "string"})
+    if "sample_id" not in emb_df.columns:
+        raise ValueError(f"{path} 缺少必要字段：sample_id")
     columns = embedding_columns(emb_df, prefix)
     merged = base.merge(emb_df[["sample_id", *columns]], on="sample_id", how="left")
     for column in columns:

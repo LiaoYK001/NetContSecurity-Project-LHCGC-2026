@@ -142,9 +142,15 @@ def run(args: argparse.Namespace) -> int:
     for name, feature_groups, label in ABLATION_CONFIGS:
         fusion_args = build_fusion_args(args, name, feature_groups)
         print(f"[RUN] {label} -> {fusion_args.pred_output}")
-        run_fusion(fusion_args)
+        exit_code = run_fusion(fusion_args)
+        if exit_code != 0:
+            raise SystemExit(exit_code)
         pred_path = Path(fusion_args.pred_output)
         metrics_path = Path(fusion_args.metrics_output)
+        if not pred_path.exists():
+            raise FileNotFoundError(f"缺少预测文件：{pred_path}")
+        if not metrics_path.exists():
+            raise FileNotFoundError(f"缺少指标文件：{metrics_path}")
         rows.append(summarize_one(name, label, metrics_path, pred_path))
 
     summary_frame = pd.DataFrame(rows)
