@@ -91,7 +91,11 @@ def validate_dataframe(df: pd.DataFrame, input_path: Path) -> None:
         )
 
 
-def check_one_image(row: pd.Series, image_root: Path) -> ImageCheckResult:
+def check_one_image(
+    row: pd.Series,
+    image_root: Path,
+    preprocess=None,
+) -> ImageCheckResult:
     sample_id = str(row["sample_id"])
     resolved_path, display_path = resolve_image_path(image_root, row.get("image_path"))
 
@@ -129,8 +133,10 @@ def check_one_image(row: pd.Series, image_root: Path) -> ImageCheckResult:
             mode=None,
         )
 
-    try:
+    if preprocess is None:
         preprocess = build_preprocess()
+
+    try:
         with Image.open(resolved_path) as image:
             original_width, original_height = image.size
             original_mode = image.mode
@@ -185,7 +191,11 @@ def run_check(input_path: Path, output_path: Path, image_root: Path, limit: int 
             raise ValueError("--limit must be a positive integer")
         df = df.head(limit)
 
-    results = [check_one_image(row, image_root=image_root) for _, row in df.iterrows()]
+    preprocess = build_preprocess()
+    results = [
+        check_one_image(row, image_root=image_root, preprocess=preprocess)
+        for _, row in df.iterrows()
+    ]
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     pd.DataFrame([result.__dict__ for result in results]).to_csv(
