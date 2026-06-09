@@ -1,11 +1,13 @@
-"""Build normalized behavior feature vectors for multimodal fusion (member A).
+"""成员 A：构建多模态融合用的标准化行为向量。
 
-Reads ``data/processed/behavior_features.csv`` from prepare_data.py, applies
-StandardScaler (fit on train split), and writes vectors for member B fusion.
+读取 prepare_data.py 生成的 ``data/processed/behavior_features.csv``，
+使用只在 train split 上 fit 的 StandardScaler 做标准化，
+并输出给成员 B 融合使用的行为向量。
 
-Outputs:
-  - outputs/predictions/behavior_embeddings.csv     (sample_id + beh_emb_* plus label/split/status/message)
-  - outputs/predictions/behavior_feature_meta.json  (feature names + scaler stats)
+输出：
+  - outputs/predictions/behavior_embeddings.csv     （sample_id + beh_emb_*，并保留 label/split/status/message）
+  - outputs/predictions/behavior_feature_meta.json  （特征名与 scaler 统计）
+"""
 
 from __future__ import annotations
 
@@ -23,28 +25,28 @@ META_COLUMNS = {"sample_id", "label", "split"}
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Scale behavior_features.csv into normalized behavior vectors."
+        description="把 behavior_features.csv 标准化为行为向量。"
     )
     parser.add_argument(
         "--behavior-input",
         default="data/processed/behavior_features.csv",
-        help="Behavior table from prepare_data.py.",
+        help="prepare_data.py 生成的行为特征表。",
     )
     parser.add_argument(
         "--embeddings-output",
         default="outputs/predictions/behavior_embeddings.csv",
-        help="Scaled behavior vectors for member B fusion.",
+        help="给成员 B 融合使用的标准化行为向量。",
     )
     parser.add_argument(
         "--meta-output",
         default="outputs/predictions/behavior_feature_meta.json",
-        help="Feature names and scaler metadata.",
+        help="特征名与 scaler 元数据。",
     )
     parser.add_argument(
         "--limit",
         type=int,
         default=None,
-        help="Process only the first N rows (dry run).",
+        help="只处理前 N 行，便于快速试跑。",
     )
     return parser.parse_args()
 
@@ -52,7 +54,7 @@ def parse_args() -> argparse.Namespace:
 def feature_columns(df: pd.DataFrame) -> list[str]:
     columns = [column for column in df.columns if column not in META_COLUMNS]
     if not columns:
-        raise ValueError("No behavior feature columns found.")
+        raise ValueError("没有找到行为特征列。")
     return columns
 
 
@@ -61,8 +63,9 @@ def scale_features(df: pd.DataFrame, feature_columns: list[str]) -> tuple[np.nda
     split_array = df["split"].astype(str).to_numpy()
     train_mask = split_array == "train"
     if not train_mask.any():
-        raise ValueError("No train split rows found for scaler fitting.")
+        raise ValueError("没有找到 split=train 的样本，无法 fit scaler。")
 
+    # 只在训练集上 fit scaler，避免 val/test 信息泄漏到标准化参数中。
     scaler = StandardScaler()
     scaler.fit(matrix[train_mask])
     scaled = scaler.transform(matrix)
@@ -90,7 +93,7 @@ def make_embeddings_frame(
             "label": str(row["label"]),
             "split": str(row["split"]),
             "status": "ok",
-            "message": f"scaled {len(feature_columns)} behavior features",
+            "message": f"已标准化 {len(feature_columns)} 个行为特征",
         }
         for feat_index, value in enumerate(scaled_matrix[row_index]):
             payload[f"beh_emb_{feat_index:03d}"] = float(value)
@@ -101,7 +104,10 @@ def make_embeddings_frame(
 def run(args: argparse.Namespace) -> int:
     behavior_path = Path(args.behavior_input)
     if not behavior_path.exists():
-        print(f"[WAITING_FOR_A] missing {behavior_path}. Run src/prepare_data.py first.", file=sys.stderr)
+        print(
+            f"[WAITING_FOR_A] 缺少 {behavior_path}。请先运行 src/prepare_data.py 或等待成员 A 交付数据。",
+            file=sys.stderr,
+        )
         return 2
 
     behavior_df = pd.read_csv(
@@ -111,11 +117,11 @@ def run(args: argparse.Namespace) -> int:
     missing = sorted(META_COLUMNS - set(behavior_df.columns))
     if missing:
         raise ValueError(
-            f"{behavior_path} is missing required columns: {', '.join(missing)}"
+            f"{behavior_path} 缺少必要字段：{', '.join(missing)}"
         )
     if args.limit is not None:
         if args.limit <= 0:
-            raise ValueError("--limit must be positive")
+            raise ValueError("--limit 必须为正数")
         behavior_df = behavior_df.head(args.limit)
 
     columns = feature_columns(behavior_df)
@@ -142,9 +148,9 @@ def run(args: argparse.Namespace) -> int:
     }
     meta_output.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    print(f"[DONE] wrote behavior embeddings -> {embeddings_output}")
-    print(f"[DONE] wrote meta -> {meta_output}")
-    print(f"[SUMMARY] rows={len(emb_frame)} dim={len(columns)}")
+    print(f"[DONE] 已写出行为向量 -> {embeddings_output}")
+    print(f"[DONE] 已写出元数据 -> {meta_output}")
+    print(f"[SUMMARY] 行数={len(emb_frame)} 维度={len(columns)}")
     return 0
 
 

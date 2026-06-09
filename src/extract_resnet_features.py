@@ -1,8 +1,7 @@
-"""Day3/4 ResNet feature extraction scaffold for member B.
+"""Day3/4 成员 B：ResNet 图像特征提取。
 
-The script prepares image embeddings for multimodal fusion. It keeps samples
-with missing or broken images by writing zero vectors, so A/B/C can keep
-sample_id alignment.
+为多模态融合准备图像向量。缺失、格式不支持或损坏的图片不会删除样本，
+而是写入 512 维零向量，保证 A/B/C 后续都能按 ``sample_id`` 对齐。
 """
 
 from __future__ import annotations
@@ -36,56 +35,56 @@ class FeatureResult:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Extract frozen ResNet image embeddings for Day3/4."
+        description="提取冻结 ResNet 图像向量，供 Day3/4 与后续融合使用。"
     )
     parser.add_argument(
         "--input",
         default="data/processed/dataset_v1.csv",
-        help="CSV from member A. Must include sample_id,image_path,label,split.",
+        help="成员 A 提供的 CSV，必须包含 sample_id,image_path,label,split。",
     )
     parser.add_argument(
         "--embeddings-output",
         default="outputs/predictions/image_embeddings.csv",
-        help="Local embedding CSV. outputs/ is ignored by git.",
+        help="本地图像向量 CSV。outputs/ 默认被 git 忽略。",
     )
     parser.add_argument(
         "--pred-output",
         default="outputs/predictions/image_resnet_pred.csv",
-        help="Local placeholder prediction CSV for C's interface check.",
+        help="给成员 C 检查接口用的本地占位预测 CSV。",
     )
     parser.add_argument(
         "--image-root",
         default=".",
-        help="Base directory for relative image_path values.",
+        help="相对 image_path 的基准目录。",
     )
     parser.add_argument(
         "--limit",
         type=int,
         default=None,
-        help="Optionally process only the first N rows after split filtering.",
+        help="可选：在 split 过滤后只处理前 N 行。",
     )
     parser.add_argument(
         "--model",
         default="resnet18",
         choices=["resnet18"],
-        help="Feature backbone. Day3 scaffold currently supports resnet18.",
+        help="图像特征骨干网络。当前脚本仅支持 resnet18。",
     )
     parser.add_argument(
         "--weights",
         default="default",
         choices=["default", "none"],
-        help="Use pretrained default weights or an untrained backbone for dry runs.",
+        help="使用默认预训练权重，或用未训练骨架做流程试跑。",
     )
     parser.add_argument(
         "--split",
         default=None,
-        help="Optional split filter, such as test. Default processes all rows.",
+        help="可选 split 过滤，例如 test；默认处理全部行。",
     )
     parser.add_argument(
         "--threshold",
         type=float,
         default=0.5,
-        help="Placeholder threshold for the interface prediction CSV.",
+        help="接口占位预测 CSV 使用的阈值。",
     )
     return parser.parse_args()
 
@@ -108,7 +107,7 @@ def validate_dataframe(df: pd.DataFrame, input_path: Path) -> None:
     missing_columns = sorted(REQUIRED_COLUMNS - set(df.columns))
     if missing_columns:
         raise ValueError(
-            f"{input_path} is missing required columns: {', '.join(missing_columns)}"
+            f"{input_path} 缺少必要字段：{', '.join(missing_columns)}"
         )
 
 
@@ -157,7 +156,7 @@ def extract_one_feature(
             true_label=true_label,
             image_path="",
             status="missing_path",
-            message="image_path is empty; using zero vector",
+            message="image_path 为空；使用零向量",
             embedding=zero_embedding(),
         )
 
@@ -168,7 +167,7 @@ def extract_one_feature(
             true_label=true_label,
             image_path=display_path,
             status="unsupported_format",
-            message=f"expected jpg/jpeg/png, got {suffix or 'no extension'}; using zero vector",
+            message=f"期望 jpg/jpeg/png，实际为 {suffix or '无扩展名'}；使用零向量",
             embedding=zero_embedding(),
         )
 
@@ -178,13 +177,14 @@ def extract_one_feature(
             true_label=true_label,
             image_path=display_path,
             status="file_not_found",
-            message="image file does not exist; using zero vector",
+            message="图片文件不存在；使用零向量",
             embedding=zero_embedding(),
         )
 
     try:
         import torch
 
+        # 延迟加载预处理和模型，避免缺图样本也触发权重加载。
         if "preprocess" not in model_cache:
             model_cache["preprocess"] = build_preprocess()
         if "model" not in model_cache:
@@ -197,14 +197,14 @@ def extract_one_feature(
                 embedding_tensor = model_cache["model"](tensor).squeeze(0)
         embedding = [float(value) for value in embedding_tensor.tolist()]
         if len(embedding) != RESNET18_DIM:
-            raise RuntimeError(f"unexpected embedding length: {len(embedding)}")
+            raise RuntimeError(f"图像向量长度异常：{len(embedding)}")
     except (OSError, UnidentifiedImageError, RuntimeError, ImportError) as exc:
         return FeatureResult(
             sample_id=sample_id,
             true_label=true_label,
             image_path=display_path,
             status="image_error",
-            message=f"{exc}; using zero vector",
+            message=f"{exc}；使用零向量",
             embedding=zero_embedding(),
         )
 
@@ -213,7 +213,7 @@ def extract_one_feature(
         true_label=true_label,
         image_path=display_path,
         status="ok",
-        message=f"extracted ResNet18 {RESNET18_DIM}-dim embedding",
+        message=f"已提取 ResNet18 {RESNET18_DIM} 维图像向量",
         embedding=embedding,
     )
 
@@ -240,6 +240,7 @@ def make_embeddings_frame(results: list[FeatureResult]) -> pd.DataFrame:
 def make_prediction_frame(results: list[FeatureResult], threshold: float) -> pd.DataFrame:
     risk_prob = 0.5
     pred_label = "risk" if risk_prob >= threshold else "normal"
+    # 当前没有训练图像分类头，所以预测文件只用于接口占位。
     return pd.DataFrame(
         [
             {
@@ -262,16 +263,16 @@ def run(args: argparse.Namespace) -> int:
 
     if not input_path.exists():
         print(
-            f"[WAITING_FOR_A] {input_path} not found. "
-            "Ask member A for data/processed/dataset_v1.csv before ResNet features.",
+            f"[WAITING_FOR_A] 未找到 {input_path}。"
+            "请先向成员 A 获取 data/processed/dataset_v1.csv，再提取 ResNet 特征。",
             file=sys.stderr,
         )
         return 2
 
     if not 0.0 <= args.threshold <= 1.0:
-        raise ValueError("--threshold must be between 0 and 1")
+        raise ValueError("--threshold 必须在 0 到 1 之间")
     if args.model != "resnet18":
-        raise ValueError("Day3 scaffold currently supports only --model resnet18")
+        raise ValueError("当前 Day3/4 脚本仅支持 --model resnet18")
 
     df = pd.read_csv(
         input_path,
@@ -289,7 +290,7 @@ def run(args: argparse.Namespace) -> int:
 
     if args.limit is not None:
         if args.limit <= 0:
-            raise ValueError("--limit must be a positive integer")
+            raise ValueError("--limit 必须为正整数")
         df = df.head(args.limit)
 
     model_cache: dict[str, object] = {}
@@ -314,9 +315,9 @@ def run(args: argparse.Namespace) -> int:
     summary = ", ".join(
         f"{status}={count}" for status, count in status_counts.sort_index().items()
     )
-    print(f"[DONE] wrote embeddings -> {embeddings_output}")
-    print(f"[DONE] wrote placeholder predictions -> {pred_output}")
-    print(f"[SUMMARY] {summary if summary else 'no rows'}")
+    print(f"[DONE] 已写出图像向量 -> {embeddings_output}")
+    print(f"[DONE] 已写出占位预测 -> {pred_output}")
+    print(f"[SUMMARY] {summary if summary else '无样本'}")
     return 0
 
 

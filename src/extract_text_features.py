@@ -1,10 +1,9 @@
-"""Extract Chinese text embeddings with BERT / RoBERTa (member A, standard plan).
+"""成员 A：使用 BERT / RoBERTa 提取中文文本向量。
 
-Reads ``data/processed/text_samples.csv`` (or ``dataset_v1.csv``), outputs:
-  - outputs/predictions/text_embeddings.csv   (sample_id + txt_emb_* plus label/split/status/message)
-  - outputs/predictions/text_bert_pred.csv      (optional classifier on train split)
-The backbone stays frozen by default. A lightweight logistic head is trained only
-on the train split when ``--train-classifier`` is set.
+读取 ``data/processed/text_samples.csv``（也可传入 ``dataset_v1.csv``），输出：
+  - outputs/predictions/text_embeddings.csv   （sample_id + txt_emb_*，并保留 label/split/status/message）
+  - outputs/predictions/text_bert_pred.csv    （可选：在 train split 上训练轻量分类头）
+默认冻结文本编码器；只有指定 ``--train-classifier`` 时，才在 train split 上训练逻辑回归头。
 """
 
 from __future__ import annotations
@@ -36,67 +35,67 @@ MODEL_PRESETS: dict[str, dict[str, object]] = {
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Extract frozen BERT/RoBERTa text embeddings for multimodal fusion."
+        description="提取冻结 BERT/RoBERTa 文本向量，供多模态融合使用。"
     )
     parser.add_argument(
         "--input",
         default="data/processed/text_samples.csv",
-        help="CSV with sample_id,text,label,split.",
+        help="输入 CSV，至少包含 sample_id,text,label,split。",
     )
     parser.add_argument(
         "--embeddings-output",
         default="outputs/predictions/text_embeddings.csv",
-        help="Embedding CSV for member B/C fusion.",
+        help="给成员 B/C 融合使用的文本向量 CSV。",
     )
     parser.add_argument(
         "--pred-output",
         default="outputs/predictions/text_bert_pred.csv",
-        help="Prediction CSV using the unified 5-column interface.",
+        help="使用统一 5 列接口输出的预测 CSV。",
     )
     parser.add_argument(
         "--meta-output",
         default="outputs/predictions/text_feature_meta.json",
-        help="JSON with model name, embedding dimension, and row counts.",
+        help="记录模型名、向量维度和行数的 JSON 元数据。",
     )
     parser.add_argument(
         "--model",
         default="bert-base-chinese",
         choices=sorted(MODEL_PRESETS),
-        help="Pretrained Chinese text encoder.",
+        help="预训练中文文本编码器。",
     )
     parser.add_argument(
         "--max-length",
         type=int,
         default=128,
-        help="Tokenizer truncation length.",
+        help="Tokenizer 截断长度。",
     )
     parser.add_argument(
         "--batch-size",
         type=int,
         default=16,
-        help="Inference batch size.",
+        help="推理 batch size。",
     )
     parser.add_argument(
         "--limit",
         type=int,
         default=None,
-        help="Process only the first N rows (useful for dry runs).",
+        help="只处理前 N 行，便于快速试跑。",
     )
     parser.add_argument(
         "--split",
         default=None,
-        help="Optional split filter, e.g. train or test.",
+        help="可选 split 过滤，例如 train 或 test。",
     )
     parser.add_argument(
         "--train-classifier",
         action="store_true",
-        help="Fit a logistic head on train-split embeddings and write predictions.",
+        help="在 train split 的文本向量上训练逻辑回归头，并写出预测文件。",
     )
     parser.add_argument(
         "--device",
         default="auto",
         choices=["auto", "cpu", "cuda"],
-        help="Torch device for encoding.",
+        help="文本编码使用的 torch 设备。",
     )
     return parser.parse_args()
 
@@ -104,7 +103,7 @@ def parse_args() -> argparse.Namespace:
 def validate_dataframe(df: pd.DataFrame, path: Path) -> None:
     missing = REQUIRED_COLUMNS - set(df.columns)
     if missing:
-        raise ValueError(f"{path} is missing columns: {sorted(missing)}")
+        raise ValueError(f"{path} 缺少必要字段：{sorted(missing)}")
 
 
 def resolve_device(requested: str) -> str:
@@ -114,7 +113,7 @@ def resolve_device(requested: str) -> str:
         return "cpu"
     if requested == "cuda":
         if not torch.cuda.is_available():
-            raise RuntimeError("CUDA requested but not available.")
+            raise RuntimeError("指定了 CUDA，但当前环境不可用。")
         return "cuda"
     return "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -143,7 +142,7 @@ def encode_texts(
     import torch
 
     embeddings: list[np.ndarray] = []
-    for start in tqdm(range(0, len(texts), batch_size), desc="encode", unit="batch"):
+    for start in tqdm(range(0, len(texts), batch_size), desc="编码", unit="batch"):
         batch_texts = texts[start : start + batch_size]
         encoded = tokenizer(
             batch_texts,
@@ -155,7 +154,7 @@ def encode_texts(
         encoded = {key: value.to(device) for key, value in encoded.items()}
         with torch.no_grad():
             outputs = model(**encoded)
-            # CLS token from last hidden state works for both BERT and RoBERTa.
+            # BERT/RoBERTa 都可以使用最后一层 hidden state 的 CLS 位置作为句向量。
             batch_emb = outputs.last_hidden_state[:, 0, :].detach().cpu().numpy()
         embeddings.append(batch_emb)
     if not embeddings:
@@ -171,10 +170,10 @@ def make_embeddings_frame(
     embedding_dim: int,
 ) -> pd.DataFrame:
     if embeddings.shape[0] != len(sample_ids):
-        raise ValueError("embedding row count does not match sample count")
+        raise ValueError("向量行数与样本数量不一致")
     if embeddings.shape[1] != embedding_dim:
         raise ValueError(
-            f"expected embedding dim {embedding_dim}, got {embeddings.shape[1]}"
+            f"期望向量维度为 {embedding_dim}，实际得到 {embeddings.shape[1]}"
         )
 
     rows: list[dict[str, object]] = []
@@ -184,7 +183,7 @@ def make_embeddings_frame(
             "label": labels[index],
             "split": splits[index],
             "status": "ok",
-            "message": f"extracted {embedding_dim}-dim text embedding",
+            "message": f"已提取 {embedding_dim} 维文本向量",
         }
         for dim_index, value in enumerate(embeddings[index]):
             row[f"txt_emb_{dim_index:03d}"] = float(value)
@@ -204,7 +203,7 @@ def make_prediction_frame(
     split_array = np.array(splits)
     train_mask = split_array == "train"
     if not train_mask.any():
-        raise ValueError("No train split rows found; cannot train classifier.")
+        raise ValueError("没有找到 split=train 的样本，无法训练分类头。")
 
     classifier = LogisticRegression(
         max_iter=1000,
@@ -214,7 +213,7 @@ def make_prediction_frame(
     classifier.fit(embeddings[train_mask], y[train_mask])
     prob_matrix = classifier.predict_proba(embeddings)
     if "risk" not in label_encoder.classes_:
-        raise ValueError("labels must include 'risk' and 'normal'")
+        raise ValueError("label 必须同时包含 risk 和 normal")
     risk_index = int(np.where(label_encoder.classes_ == "risk")[0][0])
     risk_probs = prob_matrix[:, risk_index]
     pred_indices = np.argmax(prob_matrix, axis=1)
@@ -235,7 +234,7 @@ def run(args: argparse.Namespace) -> int:
     input_path = Path(args.input)
     if not input_path.exists():
         print(
-            f"[WAITING_FOR_A] {input_path} not found. Run src/prepare_data.py first.",
+            f"[WAITING_FOR_A] 未找到 {input_path}。请先运行 src/prepare_data.py 或等待成员 A 交付数据。",
             file=sys.stderr,
         )
         return 2
@@ -255,15 +254,17 @@ def run(args: argparse.Namespace) -> int:
         df = df[df["split"].astype(str) == args.split]
     if args.limit is not None:
         if args.limit <= 0:
-            raise ValueError("--limit must be positive")
+            raise ValueError("--limit 必须为正数")
         df = df.head(args.limit)
 
     if df.empty:
-        raise ValueError("No rows to process after filtering.")
+        raise ValueError("过滤后没有可处理的样本。")
 
     device = resolve_device(args.device)
     tokenizer, model, embedding_dim = load_encoder(args.model, device)
     texts = df["text"].fillna("").astype(str).tolist()
+
+    # 这里只提取冻结编码器的文本向量；默认不训练 BERT/RoBERTa 本体。
     embeddings = encode_texts(
         texts=texts,
         tokenizer=tokenizer,
@@ -302,6 +303,7 @@ def run(args: argparse.Namespace) -> int:
     }
 
     if args.train_classifier:
+        # 可选分类头只在 train split 上训练，用于生成统一 5 列预测 CSV。
         pred_frame = make_prediction_frame(
             sample_ids=sample_ids,
             labels=labels,
@@ -310,12 +312,12 @@ def run(args: argparse.Namespace) -> int:
             model_name=f"text_{args.model.replace('-', '_')}",
         )
         pred_frame.to_csv(pred_output, index=False, encoding="utf-8")
-        print(f"[DONE] wrote predictions -> {pred_output}")
+        print(f"[DONE] 已写出预测文件 -> {pred_output}")
 
     meta_output.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"[DONE] wrote embeddings -> {embeddings_output}")
-    print(f"[DONE] wrote meta -> {meta_output}")
-    print(f"[SUMMARY] rows={len(emb_frame)} dim={embedding_dim} device={device}")
+    print(f"[DONE] 已写出文本向量 -> {embeddings_output}")
+    print(f"[DONE] 已写出元数据 -> {meta_output}")
+    print(f"[SUMMARY] 行数={len(emb_frame)} 维度={embedding_dim} 设备={device}")
     return 0
 
 
