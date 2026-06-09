@@ -1,7 +1,7 @@
-"""TF-IDF + logistic regression text baseline (member A, day 3).
+"""Day3 成员 A：TF-IDF + 逻辑回归文本基线。
 
-Reads ``data/processed/text_samples.csv``, trains on ``split=train``, predicts all
-splits, and writes the unified 5-column prediction CSV for member C.
+读取 ``data/processed/text_samples.csv``，只在 ``split=train`` 上训练，
+对全部 split 生成预测，并为成员 C 输出统一 5 列预测 CSV。
 """
 
 from __future__ import annotations
@@ -31,44 +31,44 @@ MODEL_NAME = "text_tfidf"
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Train TF-IDF + logistic regression text baseline."
+        description="训练 TF-IDF + 逻辑回归文本基线。"
     )
     parser.add_argument(
         "--input",
         default="data/processed/text_samples.csv",
-        help="CSV with sample_id,text,label,split.",
+        help="输入 CSV，至少包含 sample_id,text,label,split。",
     )
     parser.add_argument(
         "--pred-output",
         default="outputs/predictions/text_tfidf_pred.csv",
-        help="Unified prediction CSV for member C.",
+        help="给成员 C 使用的统一 5 列预测 CSV。",
     )
     parser.add_argument(
         "--metrics-output",
         default="outputs/metrics/text_tfidf_metrics.json",
-        help="Per-split metrics JSON.",
+        help="按 split 统计的指标 JSON。",
     )
     parser.add_argument(
         "--errors-output",
         default="outputs/handoff/text_tfidf_error_cases.csv",
-        help="Misclassified samples for report/PPT.",
+        help="导出错分样本，供报告或 PPT 使用。",
     )
     parser.add_argument(
         "--max-features",
         type=int,
         default=50000,
-        help="Maximum TF-IDF vocabulary size.",
+        help="TF-IDF 最大词表大小。",
     )
     parser.add_argument(
         "--ngram-range",
         default="1,2",
-        help="N-gram range as 'min,max', e.g. 1,2.",
+        help="N-gram 范围，格式为 'min,max'，例如 1,2。",
     )
     parser.add_argument(
         "--error-limit",
         type=int,
         default=3,
-        help="Number of misclassified test examples to export.",
+        help="最多导出的 test 错分样本数量。",
     )
     return parser.parse_args()
 
@@ -76,20 +76,20 @@ def parse_args() -> argparse.Namespace:
 def parse_ngram_range(raw: str) -> tuple[int, int]:
     parts = [part.strip() for part in raw.split(",")]
     if len(parts) != 2:
-        raise ValueError("--ngram-range must look like '1,2'")
+        raise ValueError("--ngram-range 必须写成 '1,2' 这样的格式")
     low, high = int(parts[0]), int(parts[1])
     if low <= 0 or high < low:
-        raise ValueError("--ngram-range must satisfy 0 < min <= max")
+        raise ValueError("--ngram-range 必须满足 0 < min <= max")
     return low, high
 
 
 def validate_dataframe(df: pd.DataFrame, path: Path) -> None:
     missing = REQUIRED_COLUMNS - set(df.columns)
     if missing:
-        raise ValueError(f"{path} is missing columns: {sorted(missing)}")
+        raise ValueError(f"{path} 缺少必要字段：{sorted(missing)}")
     labels = set(df["label"].astype(str).unique())
     if not labels.issubset({"normal", "risk"}):
-        raise ValueError(f"labels must be normal/risk, got {sorted(labels)}")
+        raise ValueError(f"label 只能是 normal/risk，当前得到：{sorted(labels)}")
 
 
 def compute_split_metrics(
@@ -155,7 +155,7 @@ def run(args: argparse.Namespace) -> int:
     input_path = Path(args.input)
     if not input_path.exists():
         print(
-            f"[WAITING_FOR_A] {input_path} not found. Run src/prepare_data.py first.",
+            f"[WAITING_FOR_A] 未找到 {input_path}。请先运行 src/prepare_data.py 或等待成员 A 交付数据。",
             file=sys.stderr,
         )
         return 2
@@ -173,11 +173,12 @@ def run(args: argparse.Namespace) -> int:
 
     train_df = df[df["split"].astype(str) == "train"]
     if train_df.empty:
-        raise ValueError("No train split rows found.")
+        raise ValueError("没有找到 split=train 的训练样本。")
 
     label_encoder = LabelEncoder()
     label_encoder.fit(["normal", "risk"])
 
+    # 只用 train split 拟合 TF-IDF 和分类器，避免 val/test 信息泄漏。
     vectorizer = TfidfVectorizer(
         max_features=args.max_features,
         ngram_range=parse_ngram_range(args.ngram_range),
@@ -200,6 +201,7 @@ def run(args: argparse.Namespace) -> int:
     risk_probs = prob_matrix[:, risk_index]
     pred_labels = classifier.classes_[np.argmax(prob_matrix, axis=1)]
 
+    # 统一写出 Day1 约定的 5 列预测格式，供成员 C 直接评估。
     pred_frame = pd.DataFrame(
         {
             "sample_id": df["sample_id"].astype(str),
@@ -242,9 +244,9 @@ def run(args: argparse.Namespace) -> int:
     export_error_cases(df, pred_frame, errors_output, args.error_limit)
 
     test_metrics = split_metrics.get("test", {})
-    print(f"[DONE] wrote predictions -> {pred_output}")
-    print(f"[DONE] wrote metrics -> {metrics_output}")
-    print(f"[DONE] wrote error cases -> {errors_output}")
+    print(f"[DONE] 已写出预测文件 -> {pred_output}")
+    print(f"[DONE] 已写出指标文件 -> {metrics_output}")
+    print(f"[DONE] 已写出错例文件 -> {errors_output}")
     if test_metrics:
         print(
             "[SUMMARY] test "
