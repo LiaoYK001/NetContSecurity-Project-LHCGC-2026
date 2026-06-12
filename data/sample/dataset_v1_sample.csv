@@ -1,0 +1,5 @@
+sample_id,text,image_path,label,source,split
+case_001,示例正常内容文本,weibo/nonrumor_images/example_normal.jpg,normal,weibo_rumor_dataset,train
+case_002,示例风险内容文本,weibo/rumor_images/example_risk.jpg,risk,weibo_rumor_dataset,train
+case_003,示例测试集正常文本,,normal,weibo_rumor_dataset,test
+case_004,示例测试集风险文本,weibo/rumor_images/example_risk_2.jpg,risk,weibo_rumor_dataset,test

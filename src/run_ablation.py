@@ -1,7 +1,9 @@
-"""Day6 成员 B：一键生成消融实验预测和指标汇总。
+"""Day6 成员 B/C：批量运行五组消融实验。
 
-本脚本复用 ``train_fusion.py`` 的训练逻辑，分别跑文本、图像、行为、
-文本+图像、文本+图像+行为五组实验，输出给成员 C 画图出表使用。
+Day6 Members B/C: run the five ablation experiments in batch.
+
+中文：复用 ``train_fusion.py`` 的训练逻辑，生成文本、图像、行为、图文、三模态五组预测和指标。
+English: Reuse ``train_fusion.py`` training logic to generate predictions and metrics for text, image, behavior, text+image, and tri-modal fusion.
 """
 
 from __future__ import annotations
@@ -94,6 +96,10 @@ def build_fusion_args(
     name: str,
     feature_groups: str,
 ) -> Namespace:
+    """为单组消融实验构造 train_fusion 参数。
+
+    Build train_fusion arguments for one ablation experiment.
+    """
     pred_dir = Path(args.pred_dir)
     metrics_dir = Path(args.metrics_dir)
     return Namespace(
@@ -112,6 +118,10 @@ def build_fusion_args(
 
 
 def summarize_one(name: str, label: str, metrics_path: Path, pred_path: Path) -> dict[str, object]:
+    """读取单组消融指标并整理成汇总行。
+
+    Read one ablation metrics file and convert it into a summary row.
+    """
     metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
     test_metrics = metrics["splits"].get("test", {})
     return {
@@ -133,6 +143,10 @@ def summarize_one(name: str, label: str, metrics_path: Path, pred_path: Path) ->
 
 
 def run(args: argparse.Namespace) -> int:
+    """执行五组消融实验并写出汇总表。
+
+    Run the five ablation experiments and write summary files.
+    """
     pred_dir = Path(args.pred_dir)
     metrics_dir = Path(args.metrics_dir)
     pred_dir.mkdir(parents=True, exist_ok=True)
@@ -170,6 +184,10 @@ def run(args: argparse.Namespace) -> int:
 
 
 def main() -> int:
+    """命令行入口。
+
+    Command-line entry point.
+    """
     return run(parse_args())
 
 

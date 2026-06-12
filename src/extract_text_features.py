@@ -1,9 +1,9 @@
-"""成员 A：使用 BERT / RoBERTa 提取中文文本向量。
+"""成员 A：使用冻结 BERT / RoBERTa 提取中文文本向量。
 
-读取 ``data/processed/text_samples.csv``（也可传入 ``dataset_v1.csv``），输出：
-  - outputs/predictions/text_embeddings.csv   （sample_id + txt_emb_*，并保留 label/split/status/message）
-  - outputs/predictions/text_bert_pred.csv    （可选：在 train split 上训练轻量分类头）
-默认冻结文本编码器；只有指定 ``--train-classifier`` 时，才在 train split 上训练逻辑回归头。
+Member A: extract Chinese text embeddings with a frozen BERT / RoBERTa encoder.
+
+中文：读取文本 CSV，输出 ``text_embeddings.csv``，默认不微调大模型，只把文本变成向量供融合使用。
+English: Read the text CSV and export ``text_embeddings.csv``; by default, the encoder is frozen and only produces features for fusion.
 """
 
 from __future__ import annotations
@@ -101,12 +101,20 @@ def parse_args() -> argparse.Namespace:
 
 
 def validate_dataframe(df: pd.DataFrame, path: Path) -> None:
+    """校验文本向量输入表是否满足最小字段要求。
+
+    Validate that the text embedding input table satisfies the minimum column contract.
+    """
     missing = REQUIRED_COLUMNS - set(df.columns)
     if missing:
         raise ValueError(f"{path} 缺少必要字段：{sorted(missing)}")
 
 
 def resolve_device(requested: str) -> str:
+    """解析推理设备，auto 优先 CUDA，不可用时回退 CPU。
+
+    Resolve the inference device; auto prefers CUDA and falls back to CPU.
+    """
     import torch
 
     if requested == "cpu":
@@ -119,6 +127,10 @@ def resolve_device(requested: str) -> str:
 
 
 def load_encoder(model_key: str, device: str):
+    """加载 Hugging Face tokenizer 和冻结文本编码器。
+
+    Load the Hugging Face tokenizer and frozen text encoder.
+    """
     import torch
     from transformers import AutoModel, AutoTokenizer
 
@@ -139,6 +151,10 @@ def encode_texts(
     max_length: int,
     batch_size: int,
 ) -> np.ndarray:
+    """批量编码文本，返回每条样本的 CLS 向量。
+
+    Encode texts in batches and return the CLS embedding for each sample.
+    """
     import torch
 
     embeddings: list[np.ndarray] = []
@@ -169,6 +185,10 @@ def make_embeddings_frame(
     embeddings: np.ndarray,
     embedding_dim: int,
 ) -> pd.DataFrame:
+    """把文本向量矩阵转换成项目约定的 CSV 表。
+
+    Convert the text embedding matrix into the project CSV contract.
+    """
     if embeddings.shape[0] != len(sample_ids):
         raise ValueError("向量行数与样本数量不一致")
     if embeddings.shape[1] != embedding_dim:
@@ -198,6 +218,10 @@ def make_prediction_frame(
     embeddings: np.ndarray,
     model_name: str,
 ) -> pd.DataFrame:
+    """可选：在冻结文本向量上训练轻量分类头并生成预测表。
+
+    Optionally train a lightweight classifier on frozen text embeddings and generate predictions.
+    """
     label_encoder = LabelEncoder()
     y = label_encoder.fit_transform(labels)
     split_array = np.array(splits)
@@ -231,6 +255,10 @@ def make_prediction_frame(
 
 
 def run(args: argparse.Namespace) -> int:
+    """执行文本向量提取主流程。
+
+    Run the main text embedding extraction workflow.
+    """
     input_path = Path(args.input)
     if not input_path.exists():
         print(
@@ -322,6 +350,10 @@ def run(args: argparse.Namespace) -> int:
 
 
 def main() -> int:
+    """命令行入口。
+
+    Command-line entry point.
+    """
     return run(parse_args())
 
 

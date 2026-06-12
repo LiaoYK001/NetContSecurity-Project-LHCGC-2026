@@ -1,8 +1,12 @@
-"""Day2 成员 B：图片路径与预处理检查。
+"""Day2 成员 B：检查图片路径和预处理流程。
 
-在 Day3/4 提取 ResNet 特征前，检查 ``image_path`` 是否可读，
-并验证 RGB 转换、224x224 resize 和 ImageNet normalize 流程。
-本脚本不训练模型，也不下载权重。
+Day2 Member B: check image paths and preprocessing.
+
+中文：在提取 ResNet 特征前，检查 ``image_path`` 是否可读，并验证 RGB、resize 和 normalize 流程。
+English: Before extracting ResNet features, verify that ``image_path`` is readable and that RGB conversion, resizing, and normalization work.
+
+中文：本脚本不训练模型，也不下载权重。
+English: This script does not train a model or download weights.
 """
 
 from __future__ import annotations
@@ -85,6 +89,10 @@ def resolve_image_path(image_root: Path, value: object) -> tuple[Path | None, st
 
 
 def validate_dataframe(df: pd.DataFrame, input_path: Path) -> None:
+    """校验图片检查输入表是否满足最小字段要求。
+
+    Validate that the image-check input table satisfies the minimum column contract.
+    """
     missing_columns = sorted(REQUIRED_COLUMNS - set(df.columns))
     if missing_columns:
         raise ValueError(
@@ -97,6 +105,10 @@ def check_one_image(
     image_root: Path,
     preprocess=None,
 ) -> ImageCheckResult:
+    """检查单张图片是否能进入统一预处理流程。
+
+    Check whether one image can pass through the unified preprocessing pipeline.
+    """
     sample_id = str(row["sample_id"])
     resolved_path, display_path = resolve_image_path(image_root, row.get("image_path"))
 
@@ -168,6 +180,10 @@ def check_one_image(
 
 
 def run_check(input_path: Path, output_path: Path, image_root: Path, limit: int | None) -> int:
+    """执行图片路径和预处理检查主流程。
+
+    Run the main image path and preprocessing check workflow.
+    """
     if not input_path.exists():
         print(
             f"[WAITING_FOR_A] 未找到 {input_path}。"
@@ -214,6 +230,10 @@ def run_check(input_path: Path, output_path: Path, image_root: Path, limit: int 
 
 
 def main() -> int:
+    """命令行入口。
+
+    Command-line entry point.
+    """
     args = parse_args()
     input_path = Path(args.input)
     output_path = Path(args.output)

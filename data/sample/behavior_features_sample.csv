@@ -1,0 +1,5 @@
+sample_id,label,split,verified,reposts,comments,likes,engagement_total,interaction_ratio,followers,following,posts_count,num_image_urls,text_length,url_mentions,at_mentions
+case_001,normal,train,1,3,1,5,9,0.009,1000,200,300,1,8,1,0
+case_002,risk,train,0,50,20,10,80,0.8,100,500,20,1,8,1,0
+case_003,normal,test,1,1,0,2,3,0.003,1200,150,500,0,9,0,0
+case_004,risk,test,0,100,40,30,170,1.7,100,800,10,1,9,1,0

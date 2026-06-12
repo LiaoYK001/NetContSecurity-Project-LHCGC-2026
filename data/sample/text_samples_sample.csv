@@ -1,0 +1,5 @@
+sample_id,text,label,split
+case_001,示例正常内容文本,normal,train
+case_002,示例风险内容文本,risk,train
+case_003,示例测试集正常文本,normal,test
+case_004,示例测试集风险文本,risk,test

@@ -1,10 +1,12 @@
-"""Day5 成员 B：多模态融合第一版。
+"""Day5 成员 B：训练多模态融合模型。
 
-按 ``sample_id`` 合并文本、图像和行为特征，只在 ``split=train`` 上训练
-融合分类器，并输出给成员 C 评估用的统一 5 列预测 CSV。
+Day5 Member B: train the multimodal fusion model.
 
-优先使用 ``text_embeddings.csv`` 做标准特征拼接；如果文本向量暂时缺失，
-可退回使用 ``text_tfidf_pred.csv`` 中的 ``risk_prob`` 作为文本侧保底特征。
+中文：按 ``sample_id`` 一对一合并文本、图像和行为特征，只在 ``split=train`` 上训练，并输出统一 5 列预测 CSV。
+English: Merge text, image, and behavior features one-to-one by ``sample_id``, train only on ``split=train``, and export the unified 5-column prediction CSV.
+
+中文：优先使用 BERT 文本向量；如果文本向量缺失，可退回 TF-IDF 风险概率作为保底文本特征。
+English: Prefer BERT text embeddings; if they are missing, fall back to the TF-IDF risk probability as a text feature.
 """
 
 from __future__ import annotations
@@ -109,6 +111,10 @@ def parse_feature_groups(raw: str) -> list[str]:
 
 
 def read_dataset(path: Path, limit: int | None) -> pd.DataFrame:
+    """读取融合主表，并校验 sample_id 唯一性。
+
+    Read the fusion master table and validate sample_id uniqueness.
+    """
     if not path.exists():
         print(
             f"[WAITING_FOR_A] 缺少 {path}。请先准备 dataset_v1.csv。",
@@ -146,20 +152,31 @@ def embedding_columns(df: pd.DataFrame, prefix: str) -> list[str]:
 
 
 def merge_embeddings(base: pd.DataFrame, path: Path, prefix: str, name: str) -> tuple[pd.DataFrame, list[str]]:
+    """按 sample_id 一对一合并某个模态的向量表。
+
+    Merge one modality embedding table one-to-one by sample_id.
+    """
     if not path.exists():
         raise FileNotFoundError(f"缺少{name}：{path}")
 
     emb_df = pd.read_csv(path, dtype={"sample_id": "string"})
     if "sample_id" not in emb_df.columns:
         raise ValueError(f"{path} 缺少必要字段：sample_id")
+    if emb_df["sample_id"].duplicated().any():
+        example = emb_df.loc[emb_df["sample_id"].duplicated(), "sample_id"].astype(str).iloc[0]
+        raise ValueError(f"{path} sample_id 存在重复值，例如：{example}")
     columns = embedding_columns(emb_df, prefix)
-    merged = base.merge(emb_df[["sample_id", *columns]], on="sample_id", how="left")
+    merged = base.merge(emb_df[["sample_id", *columns]], on="sample_id", how="left", validate="one_to_one")
     for column in columns:
         merged[column] = pd.to_numeric(merged[column], errors="coerce").fillna(0.0)
     return merged, columns
 
 
 def merge_text_scores(base: pd.DataFrame, path: Path) -> tuple[pd.DataFrame, list[str]]:
+    """合并 TF-IDF 文本预测概率，作为文本侧保底特征。
+
+    Merge TF-IDF text prediction probability as the fallback text feature.
+    """
     if not path.exists():
         raise FileNotFoundError(f"缺少文本预测概率：{path}")
 
@@ -167,7 +184,10 @@ def merge_text_scores(base: pd.DataFrame, path: Path) -> tuple[pd.DataFrame, lis
     missing = sorted({"sample_id", "risk_prob"} - set(pred_df.columns))
     if missing:
         raise ValueError(f"{path} 缺少必要字段：{', '.join(missing)}")
-    merged = base.merge(pred_df[["sample_id", "risk_prob"]], on="sample_id", how="left")
+    if pred_df["sample_id"].duplicated().any():
+        example = pred_df.loc[pred_df["sample_id"].duplicated(), "sample_id"].astype(str).iloc[0]
+        raise ValueError(f"{path} sample_id 存在重复值，例如：{example}")
+    merged = base.merge(pred_df[["sample_id", "risk_prob"]], on="sample_id", how="left", validate="one_to_one")
     merged = merged.rename(columns={"risk_prob": "txt_score_risk_prob"})
     merged["txt_score_risk_prob"] = pd.to_numeric(
         merged["txt_score_risk_prob"], errors="coerce"
@@ -181,6 +201,10 @@ def choose_text_features(
     text_pred_path: Path,
     mode: str,
 ) -> tuple[pd.DataFrame, list[str], str]:
+    """根据模式选择 BERT 文本向量或 TF-IDF 保底分数。
+
+    Choose BERT text embeddings or the TF-IDF fallback score according to the mode.
+    """
     if mode in {"auto", "embeddings"} and text_embeddings_path.exists():
         merged, columns = merge_embeddings(base, text_embeddings_path, "txt_emb_", "文本向量")
         return merged, columns, "text_embeddings"
@@ -202,6 +226,10 @@ def split_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, float]:
 
 
 def run(args: argparse.Namespace) -> int:
+    """执行多模态融合训练和预测导出主流程。
+
+    Run the main multimodal fusion training and prediction export workflow.
+    """
     dataset_path = Path(args.dataset)
     text_embeddings_path = Path(args.text_embeddings)
     text_pred_path = Path(args.text_pred)
@@ -313,6 +341,10 @@ def run(args: argparse.Namespace) -> int:
 
 
 def main() -> int:
+    """命令行入口。
+
+    Command-line entry point.
+    """
     return run(parse_args())
 
 

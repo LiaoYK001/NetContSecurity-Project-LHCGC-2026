@@ -1,12 +1,9 @@
 """成员 A：构建多模态融合用的标准化行为向量。
 
-读取 prepare_data.py 生成的 ``data/processed/behavior_features.csv``，
-使用只在 train split 上 fit 的 StandardScaler 做标准化，
-并输出给成员 B 融合使用的行为向量。
+Member A: build standardized behavior embeddings for multimodal fusion.
 
-输出：
-  - outputs/predictions/behavior_embeddings.csv     （sample_id + beh_emb_*，并保留 label/split/status/message）
-  - outputs/predictions/behavior_feature_meta.json  （特征名与 scaler 统计）
+中文：读取 ``behavior_features.csv``，只在 train split 上 fit 标准化器，并输出给成员 B 融合使用的行为向量。
+English: Read ``behavior_features.csv``, fit the scaler only on the train split, and export behavior embeddings for Member B's fusion model.
 """
 
 from __future__ import annotations
@@ -52,6 +49,10 @@ def parse_args() -> argparse.Namespace:
 
 
 def feature_columns(df: pd.DataFrame) -> list[str]:
+    """找出可用于建模的行为特征列。
+
+    Find behavior feature columns that can be used for modeling.
+    """
     columns = [column for column in df.columns if column not in META_COLUMNS]
     if not columns:
         raise ValueError("没有找到行为特征列。")
@@ -59,6 +60,10 @@ def feature_columns(df: pd.DataFrame) -> list[str]:
 
 
 def scale_features(df: pd.DataFrame, feature_columns: list[str]) -> tuple[np.ndarray, dict[str, object]]:
+    """只用 train split 拟合标准化器，并转换全部样本。
+
+    Fit the scaler only on the train split and transform all samples.
+    """
     matrix = df[feature_columns].to_numpy(dtype=np.float64)
     split_array = df["split"].astype(str).to_numpy()
     train_mask = split_array == "train"
@@ -85,6 +90,10 @@ def make_embeddings_frame(
     scaled_matrix: np.ndarray,
     feature_columns: list[str],
 ) -> pd.DataFrame:
+    """把标准化行为矩阵转换成项目约定的向量 CSV。
+
+    Convert the standardized behavior matrix into the project embedding CSV contract.
+    """
     rows: list[dict[str, object]] = []
     for row_index in range(len(df)):
         row = df.iloc[row_index]
@@ -102,6 +111,10 @@ def make_embeddings_frame(
 
 
 def run(args: argparse.Namespace) -> int:
+    """执行行为特征标准化和导出主流程。
+
+    Run the main behavior feature scaling and export workflow.
+    """
     behavior_path = Path(args.behavior_input)
     if not behavior_path.exists():
         print(
@@ -155,6 +168,10 @@ def run(args: argparse.Namespace) -> int:
 
 
 def main() -> int:
+    """命令行入口。
+
+    Command-line entry point.
+    """
     return run(parse_args())
 
 

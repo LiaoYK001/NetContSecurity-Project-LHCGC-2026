@@ -1,0 +1,17 @@
+{
+  "parsed_records": 7723,
+  "split_records": 7723,
+  "exported_rows": 7723,
+  "empty_text_dropped": 0,
+  "with_local_image": 7681,
+  "without_local_image": 42,
+  "label_counts": {
+    "normal": 3615,
+    "risk": 4108
+  },
+  "split_counts": {
+    "train": 5415,
+    "val": 843,
+    "test": 1465
+  }
+}
