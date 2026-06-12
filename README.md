@@ -17,11 +17,73 @@ uv run python -c "import torch, transformers, pandas, sklearn; print('env ok')"
 
 常用依赖已经写入 `pyproject.toml` 并锁定在 `uv.lock` 中，包括 PyTorch、Transformers、Datasets、Scikit-learn、Pandas、OpenCV、Matplotlib、Seaborn 和 Streamlit。
 
+## Reproduce Locally
+
+本仓库提供的是“可复现流程”，不是“零数据直接复现最终指标”。完整数据、图片、模型权重、模型缓存和实验输出不进入 public 仓库。别人 clone 后需要先下载同源公开数据集，或使用课程组私下分发的 processed 数据，才能复现最终指标。
+
+默认推荐数据集是 EANN-KDD18 Weibo 多模态谣言检测数据集：
+
+- 论文：Wang et al., *EANN: Event Adversarial Neural Networks for Multi-Modal Fake News Detection*, KDD 2018
+- 数据入口：[https://github.com/yaqingwang/EANN-KDD18](https://github.com/yaqingwang/EANN-KDD18)
+
+下载或解压后，把 Weibo 数据放到本地 ignored 目录，例如：
+
+```text
+tmp/weibo/
+├── tweets/
+│   ├── train_rumor.txt
+│   ├── train_nonrumor.txt
+│   ├── test_rumor.txt
+│   └── test_nonrumor.txt
+├── train_id.pickle
+├── validate_id.pickle
+├── test_id.pickle
+├── rumor_images/
+└── nonrumor_images/
+```
+
+`tmp/` 已被 `.gitignore` 排除。确认目录结构后，生成项目需要的 processed CSV：
+
+```powershell
+uv run python src/prepare_data.py --weibo-root tmp/weibo --output-dir data/processed --handoff-dir outputs/handoff
+```
+
+生成后应至少得到：
+
+```text
+data/processed/dataset_v1.csv
+data/processed/text_samples.csv
+data/processed/behavior_features.csv
+data/processed/all_images.csv
+data/processed/dataset_stats.json
+```
+
+然后按顺序运行最终链路。NVIDIA 显卡机器优先使用 CUDA：
+
+```powershell
+uv run python src/train_text_baseline.py
+uv run python src/extract_text_features.py --input data/processed/text_samples.csv --model bert-base-chinese --batch-size 32 --max-length 128 --device cuda
+uv run python src/extract_resnet_features.py --input data/processed/dataset_v1.csv --image-root tmp --device cuda
+uv run python src/extract_behavior_features.py
+uv run python src/train_fusion.py --dataset data/processed/dataset_v1.csv --mode embeddings
+uv run python src/run_ablation.py --dataset data/processed/dataset_v1.csv --mode embeddings
+uv run python src/evaluate.py
+uv run python verify_all.py
+```
+
+如果复现机器没有 NVIDIA CUDA，把 `--device cuda` 改成 `--device auto` 或 `--device cpu`。如果 BERT 或 ResNet 权重本地没有缓存，首次运行会从 Hugging Face / PyTorch 下载；缓存和权重不要提交 Git。
+
+本项目本地最终指标基于 7723 条 processed 样本。其他人如果使用不同下载版本、不同清洗方式或其他数据集，指标可能不同，但只要转换成同样的 CSV 合同，就可以复现本仓库的数据处理、训练、融合、消融和评估流程。数据下载、字段格式和小样例见 [data/README.md](data/README.md)。
+
 ## Repository Guide
 
 ```text
 .
 ├── Architecture.mmd
+├── data/
+│   ├── README.md
+│   ├── processed/README.md
+│   └── sample/                            ← 脱敏字段样例
 ├── document/
 │   ├── 网络内容安全任务概述.md
 │   ├── [Google-Gemini]网络安全研究分工参考.md
@@ -45,7 +107,7 @@ uv run python -c "import torch, transformers, pandas, sklearn; print('env ok')"
 └── README.md
 ```
 
-后续开发建议新增但不要提交本地内容的目录：
+后续开发建议使用但不要提交完整本地内容的目录：
 
 ```text
 data/raw/          # 原始公开数据或爬虫输出，本地保存
@@ -53,9 +115,10 @@ data/processed/    # 清洗后的训练数据，本地保存
 models/            # 本地模型权重
 outputs/           # 指标、图表、预测结果
 src/               # 数据处理、训练、推理、评估代码
+tmp/               # 本地下载的公开数据集或临时数据
 ```
 
-这些数据、模型和输出目录已经在 `.gitignore` 中排除。
+这些数据、模型和输出目录已经在 `.gitignore` 中排除；只有 README、字段说明和 `data/sample/` 脱敏样例可提交。
 
 ## Team Workflow
 
@@ -89,12 +152,14 @@ src/               # 数据处理、训练、推理、评估代码
 - 未脱敏原始数据、爬虫原始 HTML、二维码、手机号、邮箱、头像、主页链接。
 - 训练 checkpoint、模型权重、日志缓存、大体积数据集。
 - 老师、同学或平台用户的个人隐私信息。
+- 完整 `tmp/`、完整 `data/processed/*.csv`、完整 `outputs/` 结果。
 
 可以提交：
 
 - 代码、配置模板、脱敏样例和字段说明。
 - 小体积实验图表、报告草稿、PPT 素材。
 - `.env.example` 这类只含占位符的示例文件。
+- `data/sample/` 中的小体积脱敏样例。
 
 ## Development Notes
 

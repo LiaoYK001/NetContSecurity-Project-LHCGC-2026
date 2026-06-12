@@ -29,6 +29,10 @@ data/processed/*
 !data/external/
 data/external/*
 !data/external/.gitkeep
+!data/README.md
+!data/processed/README.md
+!data/sample/
+!data/sample/**
 crawls/
 scrapy_output/
 downloads/
@@ -70,5 +74,4 @@ mlruns/
 document/开发组协作流程.pdf
 document/开发组协作流程.html
 weibo.zip
-prepare_data.py
 /tmp

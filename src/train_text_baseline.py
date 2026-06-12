@@ -1,7 +1,9 @@
-"""Day3 成员 A：TF-IDF + 逻辑回归文本基线。
+"""Day3 成员 A：训练 TF-IDF + 逻辑回归文本基线。
 
-读取 ``data/processed/text_samples.csv``，只在 ``split=train`` 上训练，
-对全部 split 生成预测，并为成员 C 输出统一 5 列预测 CSV。
+Day3 Member A: train a TF-IDF + Logistic Regression text baseline.
+
+中文：读取 ``data/processed/text_samples.csv``，只在 ``split=train`` 上训练，并输出统一 5 列预测 CSV。
+English: Read ``data/processed/text_samples.csv``, train only on ``split=train``, and export the unified 5-column prediction CSV.
 """
 
 from __future__ import annotations
@@ -84,6 +86,10 @@ def parse_ngram_range(raw: str) -> tuple[int, int]:
 
 
 def validate_dataframe(df: pd.DataFrame, path: Path) -> None:
+    """校验文本输入表是否满足最小字段和标签要求。
+
+    Validate that the text input table satisfies the minimum columns and label contract.
+    """
     missing = REQUIRED_COLUMNS - set(df.columns)
     if missing:
         raise ValueError(f"{path} 缺少必要字段：{sorted(missing)}")
@@ -97,6 +103,10 @@ def compute_split_metrics(
     y_pred: np.ndarray,
     labels: list[str],
 ) -> dict[str, float | dict[str, float]]:
+    """计算单个 split 的文本分类指标。
+
+    Compute text classification metrics for one split.
+    """
     return {
         "accuracy": float(accuracy_score(y_true, y_pred)),
         "precision": float(precision_score(y_true, y_pred, pos_label="risk", zero_division=0)),
@@ -122,6 +132,10 @@ def export_error_cases(
     output_path: Path,
     limit: int,
 ) -> None:
+    """导出少量错分样本，供 D/E 做错误案例分析。
+
+    Export a small set of misclassified samples for D/E error-case analysis.
+    """
     merged = pred_frame.merge(
         df[["sample_id", "text", "split"]],
         on="sample_id",
@@ -152,6 +166,10 @@ def export_error_cases(
 
 
 def run(args: argparse.Namespace) -> int:
+    """训练文本保底模型并写出预测、指标和错例文件。
+
+    Train the text fallback model and write predictions, metrics, and error cases.
+    """
     input_path = Path(args.input)
     if not input_path.exists():
         print(
@@ -259,6 +277,10 @@ def run(args: argparse.Namespace) -> int:
 
 
 def main() -> int:
+    """命令行入口。
+
+    Command-line entry point.
+    """
     return run(parse_args())
 
 

@@ -1,3 +1,11 @@
+"""校验 Day6-7 消融实验最终指标文件。
+
+Verify the final Day6-7 ablation metrics file.
+
+中文：本脚本只检查本地 outputs 下的指标汇总是否字段完整、模型组齐全、数值范围合法。
+English: This script checks local metric outputs for required columns, model groups, and valid metric ranges.
+"""
+
 from __future__ import annotations
 
 import os
@@ -11,6 +19,10 @@ EXPECTED_MODELS = {"text_only", "image_only", "behavior_only", "text_image", "te
 
 
 def check_metrics_csv() -> bool:
+    """读取并校验最终消融指标 CSV。
+
+    Read and validate the final ablation metrics CSV.
+    """
     df = pd.read_csv(METRICS_PATH, encoding="utf-8-sig")
     print("=== 消融指标汇总文件校验 ===")
     print(f"数据行数：{len(df)}")

@@ -1,7 +1,9 @@
-"""Day3/4 成员 B：ResNet 图像特征提取。
+"""Day3/4 成员 B：使用 ResNet 提取图像特征。
 
-为多模态融合准备图像向量。缺失、格式不支持或损坏的图片不会删除样本，
-而是写入 512 维零向量，保证 A/B/C 后续都能按 ``sample_id`` 对齐。
+Day3/4 Member B: extract image features with ResNet.
+
+中文：为多模态融合准备图像向量；缺图、坏图或格式不支持时写入 512 维零向量，保证样本按 ``sample_id`` 对齐。
+English: Prepare image embeddings for multimodal fusion; missing, broken, or unsupported images receive 512-dimensional zero vectors to keep samples aligned by ``sample_id``.
 """
 
 from __future__ import annotations
@@ -86,6 +88,12 @@ def parse_args() -> argparse.Namespace:
         default=0.5,
         help="接口占位预测 CSV 使用的阈值。",
     )
+    parser.add_argument(
+        "--device",
+        default="auto",
+        choices=["auto", "cpu", "cuda"],
+        help="ResNet 推理设备。auto 会优先使用 NVIDIA CUDA，不可用则回退 CPU。",
+    )
     return parser.parse_args()
 
 
@@ -104,6 +112,10 @@ def resolve_image_path(image_root: Path, value: object) -> tuple[Path | None, st
 
 
 def validate_dataframe(df: pd.DataFrame, input_path: Path) -> None:
+    """校验图像输入主表是否满足最小字段要求。
+
+    Validate that the image input table satisfies the minimum column contract.
+    """
     missing_columns = sorted(REQUIRED_COLUMNS - set(df.columns))
     if missing_columns:
         raise ValueError(
@@ -123,7 +135,27 @@ def build_preprocess():
     )
 
 
-def build_resnet18(weights_mode: str):
+def resolve_device(requested: str) -> str:
+    """解析 ResNet 推理设备，auto 优先 CUDA，不可用时回退 CPU。
+
+    Resolve the ResNet inference device; auto prefers CUDA and falls back to CPU.
+    """
+    import torch
+
+    if requested == "cpu":
+        return "cpu"
+    if requested == "cuda":
+        if not torch.cuda.is_available():
+            raise RuntimeError("指定了 CUDA，但当前 PyTorch 环境不可用。")
+        return "cuda"
+    return "cuda" if torch.cuda.is_available() else "cpu"
+
+
+def build_resnet18(weights_mode: str, device: str):
+    """构建冻结 ResNet18 特征提取器并移动到指定设备。
+
+    Build a frozen ResNet18 feature extractor and move it to the selected device.
+    """
     import torch
     from torchvision import models
 
@@ -137,6 +169,7 @@ def build_resnet18(weights_mode: str):
     model.eval()
     for parameter in model.parameters():
         parameter.requires_grad = False
+    model.to(device)
     return model
 
 
@@ -145,7 +178,12 @@ def extract_one_feature(
     image_root: Path,
     model_cache: dict[str, object],
     weights_mode: str,
+    device: str,
 ) -> FeatureResult:
+    """提取单张图片的 ResNet 向量，失败时返回零向量。
+
+    Extract the ResNet embedding for one image and return a zero vector on failure.
+    """
     sample_id = str(row["sample_id"])
     true_label = str(row["label"])
     resolved_path, display_path = resolve_image_path(image_root, row.get("image_path"))
@@ -188,13 +226,13 @@ def extract_one_feature(
         if "preprocess" not in model_cache:
             model_cache["preprocess"] = build_preprocess()
         if "model" not in model_cache:
-            model_cache["model"] = build_resnet18(weights_mode)
+            model_cache["model"] = build_resnet18(weights_mode, device)
 
         with Image.open(resolved_path) as image:
             image_rgb = image.convert("RGB")
-            tensor = model_cache["preprocess"](image_rgb).unsqueeze(0)
+            tensor = model_cache["preprocess"](image_rgb).unsqueeze(0).to(device)
             with torch.no_grad():
-                embedding_tensor = model_cache["model"](tensor).squeeze(0)
+                embedding_tensor = model_cache["model"](tensor).squeeze(0).detach().cpu()
         embedding = [float(value) for value in embedding_tensor.tolist()]
         if len(embedding) != RESNET18_DIM:
             raise RuntimeError(f"图像向量长度异常：{len(embedding)}")
@@ -219,6 +257,10 @@ def extract_one_feature(
 
 
 def make_embeddings_frame(results: list[FeatureResult]) -> pd.DataFrame:
+    """把图像提取结果转换成项目约定的向量 CSV。
+
+    Convert image feature results into the project embedding CSV contract.
+    """
     rows = []
     for result in results:
         row = {
@@ -256,6 +298,10 @@ def make_prediction_frame(results: list[FeatureResult], threshold: float) -> pd.
 
 
 def run(args: argparse.Namespace) -> int:
+    """执行 ResNet 图像特征提取主流程。
+
+    Run the main ResNet image feature extraction workflow.
+    """
     input_path = Path(args.input)
     embeddings_output = Path(args.embeddings_output)
     pred_output = Path(args.pred_output)
@@ -273,6 +319,7 @@ def run(args: argparse.Namespace) -> int:
         raise ValueError("--threshold 必须在 0 到 1 之间")
     if args.model != "resnet18":
         raise ValueError("当前 Day3/4 脚本仅支持 --model resnet18")
+    device = resolve_device(args.device)
 
     df = pd.read_csv(
         input_path,
@@ -300,6 +347,7 @@ def run(args: argparse.Namespace) -> int:
             image_root=image_root,
             model_cache=model_cache,
             weights_mode=args.weights,
+            device=device,
         )
         for _, row in df.iterrows()
     ]
@@ -317,11 +365,16 @@ def run(args: argparse.Namespace) -> int:
     )
     print(f"[DONE] 已写出图像向量 -> {embeddings_output}")
     print(f"[DONE] 已写出占位预测 -> {pred_output}")
+    print(f"[SUMMARY] device={device}")
     print(f"[SUMMARY] {summary if summary else '无样本'}")
     return 0
 
 
 def main() -> int:
+    """命令行入口。
+
+    Command-line entry point.
+    """
     return run(parse_args())
 
 

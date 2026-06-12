@@ -1,3 +1,11 @@
+"""成员 C：统一评估消融预测并生成图表。
+
+Member C: evaluate ablation predictions and generate figures.
+
+中文：本脚本只使用 ``split=test`` 样本计算最终指标，并输出指标表、混淆矩阵、ROC 曲线和 F1 柱状图。
+English: This script computes final metrics only on ``split=test`` samples and exports the metrics table, confusion matrices, ROC curves, and F1 bar chart.
+"""
+
 from __future__ import annotations
 
 import os
@@ -32,7 +40,10 @@ REQUIRED_DATASET_COLUMNS = {"sample_id", "split"}
 
 
 def read_prediction_csv(path: Path) -> pd.DataFrame:
-    """读取预测 CSV，兼容项目中常见的 UTF-8/GBK 编码。"""
+    """读取预测 CSV，兼容项目中常见的 UTF-8/GBK 编码。
+
+    Read a prediction CSV and support common UTF-8/GBK encodings used in this project.
+    """
     for encoding in ("utf-8", "utf-8-sig", "gbk"):
         try:
             return pd.read_csv(path, encoding=encoding)
@@ -42,6 +53,10 @@ def read_prediction_csv(path: Path) -> pd.DataFrame:
 
 
 def validate_prediction_frame(df: pd.DataFrame, path: Path) -> None:
+    """校验预测表是否满足统一 5 列接口和标签要求。
+
+    Validate that a prediction table satisfies the unified 5-column interface and label contract.
+    """
     missing = sorted(REQUIRED_COLUMNS - set(df.columns))
     if missing:
         raise ValueError(f"{path} 缺少必要字段：{missing}")
@@ -58,7 +73,10 @@ def validate_prediction_frame(df: pd.DataFrame, path: Path) -> None:
 
 
 def load_test_sample_ids(dataset_path: Path) -> set[str] | None:
-    """优先用主数据表的 split=test 固定最终评估口径。"""
+    """优先用主数据表的 split=test 固定最终评估口径。
+
+    Prefer the master dataset's ``split=test`` rows to lock the final evaluation scope.
+    """
     if not dataset_path.exists():
         print(f"[WARN] 未找到主数据表：{dataset_path}，将使用预测 CSV 全量行进行保底评估")
         return None
@@ -78,6 +96,10 @@ def load_test_sample_ids(dataset_path: Path) -> set[str] | None:
 
 
 def filter_to_test_split(df: pd.DataFrame, test_ids: set[str] | None, path: Path) -> pd.DataFrame:
+    """把预测表过滤到最终 test 样本。
+
+    Filter a prediction table to the final test samples.
+    """
     if test_ids is None:
         return df.copy()
 
@@ -95,7 +117,10 @@ def filter_to_test_split(df: pd.DataFrame, test_ids: set[str] | None, path: Path
 
 
 def calc_all_metrics(df: pd.DataFrame, model_name: str) -> dict[str, object]:
-    """输入单模型预测 CSV，返回评估指标和 ROC 绘图数据。"""
+    """输入单模型预测 CSV，返回评估指标和 ROC 绘图数据。
+
+    Take one model's prediction CSV and return metrics plus ROC plotting data.
+    """
     y_true_raw = df["true_label"]
     y_pred_raw = df["pred_label"]
     y_score = pd.to_numeric(df["risk_prob"], errors="raise")
@@ -133,6 +158,10 @@ def calc_all_metrics(df: pd.DataFrame, model_name: str) -> dict[str, object]:
 
 
 def save_confusion_heatmap(df: pd.DataFrame, model_name: str) -> None:
+    """保存单个模型的混淆矩阵图片。
+
+    Save the confusion-matrix figure for one model.
+    """
     cm = confusion_matrix(df["true_label"], df["pred_label"], labels=LABEL_LIST)
     plt.figure(figsize=(5, 4), dpi=300)
     sns.heatmap(
@@ -152,6 +181,10 @@ def save_confusion_heatmap(df: pd.DataFrame, model_name: str) -> None:
 
 
 def draw_roc_compare(metric_list: list[dict[str, object]], save_path: Path) -> None:
+    """绘制五组消融模型的 ROC 对比图。
+
+    Draw the ROC comparison figure for the five ablation models.
+    """
     plt.figure(figsize=(7, 6), dpi=300)
     for item in metric_list:
         plt.plot(
@@ -173,6 +206,10 @@ def draw_roc_compare(metric_list: list[dict[str, object]], save_path: Path) -> N
 
 
 def draw_ablation_f1_bar(metric_df: pd.DataFrame, save_path: Path) -> None:
+    """绘制五组消融模型的 F1 柱状图。
+
+    Draw the F1 bar chart for the five ablation models.
+    """
     plt.figure(figsize=(9, 5), dpi=300)
     sns.barplot(data=metric_df, x="model_group", y="f1", hue="model_group", palette="viridis", legend=False)
     plt.title("Ablation F1 Comparison")
@@ -192,6 +229,10 @@ def find_prediction_files() -> list[Path]:
 
 
 def main() -> int:
+    """执行统一评估、导出指标和图表。
+
+    Run unified evaluation and export metrics plus figures.
+    """
     FIG_SAVE_DIR.mkdir(parents=True, exist_ok=True)
     METRIC_OUT.parent.mkdir(parents=True, exist_ok=True)
 
