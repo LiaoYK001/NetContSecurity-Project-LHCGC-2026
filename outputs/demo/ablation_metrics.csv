@@ -1,0 +1,6 @@
+﻿model_group,sample_count,accuracy,precision,recall,f1,roc_auc
+behavior_only,1465,0.9727,0.9958,0.9511,0.9729,0.99
+image_only,1465,0.6259,0.6284,0.6733,0.6501,0.6666
+text_image_behavior,1465,0.9631,0.9718,0.9563,0.964,0.9923
+text_image,1465,0.8724,0.8892,0.8598,0.8742,0.9416
+text_only,1465,0.8696,0.8812,0.8638,0.8724,0.9366

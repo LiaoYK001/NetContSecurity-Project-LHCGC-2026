@@ -55,6 +55,8 @@ outputs/metrics/*
 !outputs/figures/
 outputs/figures/*
 !outputs/figures/.gitkeep
+!outputs/demo/
+!outputs/demo/**
 !outputs/handoff/
 outputs/handoff/*
 !outputs/handoff/.gitkeep

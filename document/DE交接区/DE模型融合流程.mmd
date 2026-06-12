@@ -1,0 +1,65 @@
+flowchart LR
+    %% DE 模型融合流程：解释 BERT、ResNet、行为特征如何合并
+
+    subgraph TEXT["文本分支"]
+        TEXT_INPUT["text_samples.csv<br/>清洗文本"]
+        TFIDF["TF-IDF + 逻辑回归<br/>保底：输出 risk_prob"]
+        TOKEN["分词器<br/>把中文文本切成模型可读编码单元"]
+        BERT["冻结 bert-base-chinese<br/>不微调，只提取语义"]
+        TXT_VEC["文本向量<br/>768 维"]
+    end
+
+    subgraph IMAGE["图像分支"]
+        IMG_INPUT["dataset_v1.csv<br/>image_path"]
+        IMG_PREP["图片预处理<br/>RGB / resize / normalize"]
+        RESNET["冻结 ResNet18<br/>提取视觉特征"]
+        IMG_VEC["图像向量<br/>512 维"]
+    end
+
+    subgraph BEH["行为分支"]
+        BEH_INPUT["behavior_features.csv<br/>13 个行为字段"]
+        SCALER["StandardScaler<br/>只在 train 上拟合"]
+        BEH_VEC["行为向量<br/>13 维"]
+    end
+
+    subgraph FUSION["融合与分类"]
+        CONCAT["按 sample_id 拼接<br/>768 + 512 + 13 = 1293 维"]
+        TRAIN["逻辑回归分类器<br/>只用 train split 训练"]
+        PRED["输出预测<br/>risk_prob + pred_label"]
+    end
+
+    subgraph ABLATION["消融实验"]
+        TEXT_ONLY["text_only<br/>只用 BERT 文本"]
+        IMAGE_ONLY["image_only<br/>只用 ResNet 图像"]
+        BEH_ONLY["behavior_only<br/>只用行为特征"]
+        TEXT_IMAGE["text_image<br/>文本 + 图像"]
+        ALL["text_image_behavior<br/>文本 + 图像 + 行为"]
+    end
+
+    TEXT_INPUT --> TFIDF
+    TEXT_INPUT --> TOKEN --> BERT --> TXT_VEC
+    IMG_INPUT --> IMG_PREP --> RESNET --> IMG_VEC
+    BEH_INPUT --> SCALER --> BEH_VEC
+    TXT_VEC --> CONCAT
+    IMG_VEC --> CONCAT
+    BEH_VEC --> CONCAT
+    CONCAT --> TRAIN --> PRED
+    TXT_VEC --> TEXT_ONLY
+    IMG_VEC --> IMAGE_ONLY
+    BEH_VEC --> BEH_ONLY
+    TXT_VEC --> TEXT_IMAGE
+    IMG_VEC --> TEXT_IMAGE
+    TEXT_IMAGE --> ALL
+    BEH_VEC --> ALL
+
+    classDef text fill:#f3fbf4,stroke:#2f8f5b,color:#12351f
+    classDef image fill:#fff7e8,stroke:#b87816,color:#3d2b05
+    classDef behavior fill:#f7f0ff,stroke:#7a55b5,color:#2f1a4f
+    classDef fusion fill:#eef6ff,stroke:#3867a8,color:#102a43
+    classDef ablation fill:#fff1f1,stroke:#b94a48,color:#4a1414
+
+    class TEXT_INPUT,TFIDF,TOKEN,BERT,TXT_VEC text
+    class IMG_INPUT,IMG_PREP,RESNET,IMG_VEC image
+    class BEH_INPUT,SCALER,BEH_VEC behavior
+    class CONCAT,TRAIN,PRED fusion
+    class TEXT_ONLY,IMAGE_ONLY,BEH_ONLY,TEXT_IMAGE,ALL ablation

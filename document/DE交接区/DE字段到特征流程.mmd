@@ -1,0 +1,63 @@
+flowchart TB
+    %% DE 字段到特征流程：解释每个字段怎样进入模型
+
+    RAW["原始 Weibo 数据<br/>文本行、图片 URL、互动字段、rumor/nonrumor 标签"]
+    CLEAN["数据清洗<br/>替换用户提及、去除噪声 URL、统一标签、划分 split"]
+
+    subgraph TABLES["生成三张核心表"]
+        DATASET["dataset_v1.csv<br/>sample_id / text / image_path / label / split"]
+        TEXT["text_samples.csv<br/>sample_id / text / label / split"]
+        BEHAVIOR_TABLE["behavior_features.csv<br/>sample_id / label / split / 13 个行为字段"]
+    end
+
+    subgraph TEXT_BRANCH["文本特征"]
+        TEXT_FIELD["text 字段<br/>清洗后的微博正文"]
+        TFIDF_FEATURE["TF-IDF 风险概率<br/>保底文本信号"]
+        BERT_FEATURE["BERT 文本向量<br/>768 维语义特征"]
+    end
+
+    subgraph IMAGE_BRANCH["图像特征"]
+        IMAGE_PATH["image_path 字段<br/>图片本地路径，可为空"]
+        IMAGE_PREP["图片预处理<br/>读取、RGB、224x224、normalize"]
+        IMAGE_FEATURE["ResNet18 图像向量<br/>512 维视觉特征"]
+    end
+
+    subgraph BEHAVIOR_BRANCH["行为特征"]
+        BEH_FIELDS["verified / reposts / comments / likes<br/>followers / following / posts_count<br/>text_length / url_mentions / at_mentions 等"]
+        SCALE["只在 train 上 fit StandardScaler<br/>避免测试集信息泄漏"]
+        BEH_FEATURE["行为向量<br/>13 维结构化特征"]
+    end
+
+    ALIGN["sample_id 对齐<br/>保证同一条内容的文本、图像、行为合在一起"]
+    FINAL["模型输入<br/>文本向量 + 图像向量 + 行为向量"]
+
+    RAW --> CLEAN
+    CLEAN --> DATASET
+    CLEAN --> TEXT
+    CLEAN --> BEHAVIOR_TABLE
+    TEXT --> TEXT_FIELD
+    TEXT_FIELD --> TFIDF_FEATURE
+    TEXT_FIELD --> BERT_FEATURE
+    DATASET --> IMAGE_PATH
+    IMAGE_PATH --> IMAGE_PREP
+    IMAGE_PREP --> IMAGE_FEATURE
+    BEHAVIOR_TABLE --> BEH_FIELDS
+    BEH_FIELDS --> SCALE
+    SCALE --> BEH_FEATURE
+    TFIDF_FEATURE --> ALIGN
+    BERT_FEATURE --> ALIGN
+    IMAGE_FEATURE --> ALIGN
+    BEH_FEATURE --> ALIGN
+    ALIGN --> FINAL
+
+    classDef table fill:#eef6ff,stroke:#3867a8,color:#102a43
+    classDef text fill:#f3fbf4,stroke:#2f8f5b,color:#12351f
+    classDef image fill:#fff7e8,stroke:#b87816,color:#3d2b05
+    classDef behavior fill:#f7f0ff,stroke:#7a55b5,color:#2f1a4f
+    classDef final fill:#fff1f1,stroke:#b94a48,color:#4a1414
+
+    class DATASET,TEXT,BEHAVIOR_TABLE table
+    class TEXT_FIELD,TFIDF_FEATURE,BERT_FEATURE text
+    class IMAGE_PATH,IMAGE_PREP,IMAGE_FEATURE image
+    class BEH_FIELDS,SCALE,BEH_FEATURE behavior
+    class ALIGN,FINAL final

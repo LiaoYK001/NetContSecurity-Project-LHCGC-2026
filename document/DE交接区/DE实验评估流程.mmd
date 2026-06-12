@@ -1,0 +1,62 @@
+flowchart TB
+    %% DE 实验评估流程：解释指标和图表怎样产出
+
+    INPUT["五组预测结果<br/>text_only / image_only / behavior_only / text_image / text_image_behavior"]
+    TEST["只取 split=test<br/>最终评估 1465 条样本"]
+
+    subgraph METRICS["计算指标"]
+        ACC["Accuracy<br/>总体判断正确率"]
+        PRE["Precision<br/>预测风险中真正风险的比例"]
+        REC["Recall<br/>真实风险中被找出的比例"]
+        F1["F1<br/>Precision 与 Recall 的综合"]
+        AUC["ROC AUC<br/>区分 normal/risk 的整体能力"]
+    end
+
+    subgraph FIGURES["生成图表"]
+        BAR["ablation_f1_bar.png<br/>五组消融 F1 对比"]
+        ROC["roc_all_compare.png<br/>五组 ROC 曲线"]
+        CM["cm_*.png<br/>每个模型的混淆矩阵"]
+    end
+
+    subgraph INTERPRET["结果解释"]
+        FINAL["三模态方案<br/>F1 0.9640，ROC AUC 0.9923"]
+        BEH["行为特征最高<br/>F1 0.9729，但需说明数据偏差风险"]
+        IMG["图像单独较弱<br/>F1 0.6501，适合作辅助信号"]
+        TEXT["文本稳定<br/>F1 0.8724，说明语义有效"]
+    end
+
+    OUTPUT["outputs/demo<br/>公开展示汇总指标和图表"]
+    REPORT["报告/PPT<br/>引用图表并解释结论"]
+
+    INPUT --> TEST
+    TEST --> ACC
+    TEST --> PRE
+    TEST --> REC
+    TEST --> F1
+    TEST --> AUC
+    F1 --> BAR
+    AUC --> ROC
+    ACC --> CM
+    PRE --> CM
+    REC --> CM
+    BAR --> FINAL
+    ROC --> FINAL
+    CM --> FINAL
+    BAR --> BEH
+    BAR --> IMG
+    BAR --> TEXT
+    FINAL --> OUTPUT
+    BEH --> OUTPUT
+    IMG --> OUTPUT
+    TEXT --> OUTPUT
+    OUTPUT --> REPORT
+
+    classDef metric fill:#eef6ff,stroke:#3867a8,color:#102a43
+    classDef figure fill:#f3fbf4,stroke:#2f8f5b,color:#12351f
+    classDef explain fill:#fff7e8,stroke:#b87816,color:#3d2b05
+    classDef output fill:#fff1f1,stroke:#b94a48,color:#4a1414
+
+    class ACC,PRE,REC,F1,AUC metric
+    class BAR,ROC,CM figure
+    class FINAL,BEH,IMG,TEXT explain
+    class OUTPUT,REPORT output
