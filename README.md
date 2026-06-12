@@ -6,6 +6,8 @@
 
 工程分工和主流程见 [Architecture.mmd](Architecture.mmd)。
 
+报告和 PPT 组优先阅读 [document/DE交接区/README.md](document/DE交接区/README.md)。这个目录是 public-safe 的最终交接区，成员 D/E 不读完整仓库也能理解项目原理、流程、图表和写作主线。
+
 ## Quick Start
 
 项目使用 `uv` 管理 Python 环境，默认 Python 版本为 3.11。
@@ -89,6 +91,7 @@ uv run python verify_all.py
 ├── outputs/
 │   └── demo/                              ← public-safe 示例指标和图表
 ├── document/
+│   ├── DE交接区/                            ← 报告/PPT组优先阅读的保姆级交接区
 │   ├── 网络内容安全任务概述.md
 │   ├── [Google-Gemini]网络安全研究分工参考.md
 │   ├── 人员分工参考Team-Responsibility-Reference.md

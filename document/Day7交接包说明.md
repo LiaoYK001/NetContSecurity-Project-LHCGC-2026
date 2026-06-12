@@ -39,6 +39,14 @@ ABC技术解释.md
 
 这些文件默认被 `.gitignore` 排除，避免把真实数据、错误案例、预测明细或本地交接材料误提交到 public 仓库。
 
+如果 D/E 需要的是“可以直接写报告和做 PPT 的 public-safe 交接材料”，优先阅读：
+
+```text
+document/DE交接区/README.md
+```
+
+`outputs/handoff/` 是本地开发交接区，适合 A/B/C 和本机协作；`document/DE交接区/` 是公开展示和报告/PPT 写作入口，适合 D/E、老师和评分同学。
+
 ## 3. 可公开 Demo 结果
 
 经人工确认不含原始文本、真实样本 ID、用户链接、cookie、token、预测明细或完整 processed 数据的结果，可以放在：

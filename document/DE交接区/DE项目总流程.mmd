@@ -1,0 +1,69 @@
+flowchart LR
+    %% DE 项目总流程：给报告和 PPT 使用
+
+    subgraph INPUT["一、项目输入"]
+        GOAL["课程目标：网络内容安全<br/>识别风险内容和异常信号"]
+        DATA["公开 EANN-KDD18 Weibo 数据<br/>文本、图片、互动字段、标签"]
+        PRIVACY["public 仓库边界<br/>不提交原文、完整数据、预测明细、模型权重"]
+    end
+
+    subgraph PREP["二、数据处理"]
+        PREP_SCRIPT["prepare_data.py<br/>把原始 Weibo 数据转成项目 CSV"]
+        DATASET["dataset_v1.csv<br/>多模态主表：sample_id、text、image_path、label、split"]
+        TEXT_CSV["text_samples.csv<br/>文本模型输入"]
+        BEH_CSV["behavior_features.csv<br/>行为特征输入"]
+    end
+
+    subgraph MODEL["三、模型与特征"]
+        TFIDF["TF-IDF + 逻辑回归<br/>文本保底基线"]
+        BERT["冻结 bert-base-chinese<br/>768 维文本语义向量"]
+        RESNET["冻结 ResNet18<br/>512 维图片视觉向量"]
+        BEHAVIOR["13 维行为向量<br/>互动、账号、结构化字段"]
+        FUSION["多模态融合<br/>文本向量 + 图像向量 + 行为向量"]
+    end
+
+    subgraph EVAL["四、实验评估"]
+        ABLATION["五组消融实验<br/>文本、图像、行为、图文、三模态"]
+        METRICS["指标表<br/>Accuracy、Precision、Recall、F1、ROC AUC"]
+        FIGURES["图表<br/>F1 柱状图、ROC 曲线、混淆矩阵"]
+    end
+
+    subgraph DELIVERY["五、报告与答辩"]
+        DEMO["outputs/demo<br/>public-safe 示例结果"]
+        REPORT["成员 D：报告<br/>背景、方法、数据、实验、局限"]
+        PPT["成员 E：PPT<br/>问题、流程、结果、问答"]
+    end
+
+    GOAL --> PREP_SCRIPT
+    DATA --> PREP_SCRIPT
+    PRIVACY --> DEMO
+    PREP_SCRIPT --> DATASET
+    PREP_SCRIPT --> TEXT_CSV
+    PREP_SCRIPT --> BEH_CSV
+    TEXT_CSV --> TFIDF
+    TEXT_CSV --> BERT
+    DATASET --> RESNET
+    BEH_CSV --> BEHAVIOR
+    BERT --> FUSION
+    RESNET --> FUSION
+    BEHAVIOR --> FUSION
+    TFIDF --> ABLATION
+    FUSION --> ABLATION
+    ABLATION --> METRICS
+    ABLATION --> FIGURES
+    METRICS --> DEMO
+    FIGURES --> DEMO
+    DEMO --> REPORT
+    DEMO --> PPT
+
+    classDef input fill:#eef6ff,stroke:#3867a8,color:#102a43
+    classDef prep fill:#f3fbf4,stroke:#2f8f5b,color:#12351f
+    classDef model fill:#fff7e8,stroke:#b87816,color:#3d2b05
+    classDef eval fill:#f7f0ff,stroke:#7a55b5,color:#2f1a4f
+    classDef delivery fill:#fff1f1,stroke:#b94a48,color:#4a1414
+
+    class GOAL,DATA,PRIVACY input
+    class PREP_SCRIPT,DATASET,TEXT_CSV,BEH_CSV prep
+    class TFIDF,BERT,RESNET,BEHAVIOR,FUSION model
+    class ABLATION,METRICS,FIGURES eval
+    class DEMO,REPORT,PPT delivery

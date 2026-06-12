@@ -4,6 +4,8 @@
 
 These are public-safe demo results from the Weibo experiment for quick review by instructors, classmates, or evaluators.
 
+报告/PPT 写作说明见 [../../document/DE交接区/README.md](../../document/DE交接区/README.md)。DE 交接区会说明每张图放在哪里、怎么讲、如何解释指标。
+
 ## 1. 结果来源
 
 这些结果来自默认 EANN-KDD18 Weibo 流程：
