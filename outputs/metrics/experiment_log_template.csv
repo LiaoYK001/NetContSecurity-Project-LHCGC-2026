@@ -1,5 +1,6 @@
 ﻿model_group,accuracy,precision,recall,f1,roc_auc
 behavior_only,0.9676,0.9961,0.9428,0.9687,0.9916
+fusion_error_sample.csv,0.0,0.0,0.0,0.0,0.0
 image_only,0.4681,0.0,0.0,0.0,0.5
 text_image_behavior,0.9802,0.9943,0.9684,0.9811,0.9977
 text_image,0.8447,0.9404,0.7561,0.8382,0.9361

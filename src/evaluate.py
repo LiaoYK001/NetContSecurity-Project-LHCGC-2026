@@ -106,7 +106,7 @@ def main():
     for file_name in pred_files:
         file_path = os.path.join(PRED_ROOT, file_name)
         model_name = file_name.replace("_pred.csv", "")
-        df = pd.read_csv(file_path)
+        df = pd.read_csv(file_path, encoding="gbk")
         print(f"正在计算：{model_name}")
         # 计算指标
         metric_dict = calc_all_metrics(df, model_name)
