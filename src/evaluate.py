@@ -1,6 +1,5 @@
 import os
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import (
@@ -10,7 +9,7 @@ from sklearn.metrics import (
 
 # ===================== 路径配置（和仓库目录完全匹配，无需修改） =====================
 PRED_ROOT = "outputs/predictions/ablation"
-METRIC_TEMPLATE = "outputs/metrics/experiment_log_template.csv"
+METRIC_OUT = "outputs/metrics/ablation_metrics.csv"
 FIG_SAVE_DIR = "outputs/figures"
 os.makedirs(FIG_SAVE_DIR, exist_ok=True)
 os.makedirs("outputs/metrics", exist_ok=True)
@@ -97,16 +96,16 @@ def draw_ablation_f1_bar(metric_df, save_path):
 
 
 def main():
-    # 1. 批量读取ablation下所有预测csv
-    pred_files = [f for f in os.listdir(PRED_ROOT) if f.endswith(".csv")]
+# 1. 批量读取ablation下所有预测csv
+pred_files = sorted([f for f in os.listdir(PRED_ROOT) if f.endswith("_pred.csv")])
     all_model_metrics = []
     roc_draw_cache = []
 
     print("===== 开始批量读取消融预测文件 =====")
     for file_name in pred_files:
-        file_path = os.path.join(PRED_ROOT, file_name)
-        model_name = file_name.replace("_pred.csv", "")
-        df = pd.read_csv(file_path, encoding="gbk")
+file_path = os.path.join(PRED_ROOT, file_name)
+model_name = file_name[: -len("_pred.csv")]
+df = pd.read_csv(file_path, encoding="gbk")
         print(f"正在计算：{model_name}")
         # 计算指标
         metric_dict = calc_all_metrics(df, model_name)
@@ -118,20 +117,20 @@ def main():
     # 2. 汇总指标表格，写入模板csv
     metric_df = pd.DataFrame(all_model_metrics)
     # 剔除绘图用的fpr/tpr列，只保留数值指标
-    export_df = metric_df.drop(columns=["fpr", "tpr"])
-    export_df.to_csv(METRIC_TEMPLATE, index=False, encoding="utf-8-sig")
-    print(f"\n✅ 全部指标汇总完成，保存至：{METRIC_TEMPLATE}")
+export_df = metric_df.drop(columns=["fpr", "tpr"])
+export_df.to_csv(METRIC_OUT, index=False, encoding="utf-8")
+print(f"\n✅ 全部指标汇总完成，保存至：{METRIC_OUT}")
 
     # 3. 绘制两张总对比图
     draw_roc_compare(roc_draw_cache, os.path.join(FIG_SAVE_DIR, "roc_all_compare.png"))
     draw_ablation_f1_bar(metric_df, os.path.join(FIG_SAVE_DIR, "ablation_f1_bar.png"))
     print(f"✅ 全部图表已输出至：{FIG_SAVE_DIR}")
     print("\n===== 评测流程全部结束 =====")
-    print("产出清单：")
-    print("1. 指标汇总表：outputs/metrics/experiment_log_template.csv")
-    print("2. 各模型混淆矩阵：outputs/figures/cm_*.png")
-    print("3. ROC对比图：outputs/figures/roc_all_compare.png")
-    print("4. 消融F1柱状图：outputs/figures/ablation_f1_bar.png")
+print("产出清单：")
+print("1. 指标汇总表：outputs/metrics/ablation_metrics.csv")
+print("2. 各模型混淆矩阵：outputs/figures/cm_*.png")
+print("3. ROC对比图：outputs/figures/roc_all_compare.png")
+print("4. 消融F1柱状图：outputs/figures/ablation_f1_bar.png")
 
 
 if __name__ == "__main__":

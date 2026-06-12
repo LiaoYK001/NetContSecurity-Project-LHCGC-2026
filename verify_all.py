@@ -1,33 +1,31 @@
 import pandas as pd
 import os
 
-# 定义实验日志csv文件路径
-file_path = "outputs/metrics/experiment_log_template.csv"
+# 定义评估指标汇总csv文件路径（由 src/evaluate.py 生成）
+file_path = "outputs/metrics/ablation_metrics.csv"
 
 
-def check_experiment_csv():
-    # 修复编码报错，指定gbk编码读取中文CSV
-    df = pd.read_csv(file_path, encoding="gbk")
-    print("=== 实验日志文件校验完成 ===")
+def check_experiment_csv() -> bool:
+    df = pd.read_csv(file_path, encoding="utf-8")
+    print("=== 指标汇总文件读取完成 ===")
     print(f"数据集总行数：{len(df)}")
-    print(f"数据集字段列表：{list(df.columns)}")
-    print("\n前5行数据预览：")
-    print(df.head())
+    print(f"字段列表：{list(df.columns)}")
 
-    # 校验5类误判字段是否存在
-    error_type_cols = ["类别1_单文本漏报", "类别2_图文特征冲突", "类别3_图像噪声干扰", "类别4_关键词误匹配",
-                       "类别5_时序对齐异常"]
-    for col in error_type_cols:
-        if col in df.columns:
-            print(f"\n{col} 样本总数：{df[col].sum()}")
-        else:
-            print(f"警告：缺失字段 {col}")
+    required_cols = ["model_group", "accuracy", "precision", "recall", "f1", "roc_auc"]
+    missing = [c for c in required_cols if c not in df.columns]
+    if missing:
+        print(f"❌ 缺失必要字段：{missing}")
+        return False
+
+    print("✅ 字段校验通过")
+    return True
 
 
 if __name__ == "__main__":
     # 先判断文件是否存在
     if os.path.exists(file_path):
-        check_experiment_csv()
-        print("\n✅ 全部校验通过，无文件/编码异常")
+        ok = check_experiment_csv()
+        raise SystemExit(0 if ok else 1)
     else:
         print(f"❌ 文件不存在：{file_path}，请先运行评估脚本生成日志")
+        raise SystemExit(1)
