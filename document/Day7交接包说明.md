@@ -1,6 +1,6 @@
 # Day7 交接包说明
 
-本文是 public-safe 版本，说明开发组如何把本地结果交给 D/E。完整预测文件、图表、模型权重和真实数据保存在本地 `outputs/` 和 `data/processed/`，默认不提交 GitHub。
+本文是 public-safe 版本，说明开发组如何把本地结果交给 D/E。完整预测文件、模型权重、真实数据、错误案例和本地交接材料保存在本地 `outputs/` 和 `data/processed/`，默认不提交 GitHub。经人工确认不含敏感样本内容的汇总指标和图表可以放到 `outputs/demo/` 公开展示。
 
 ## 1. 当前本地数据口径
 
@@ -37,9 +37,34 @@ README_Day7交接包.md
 ABC技术解释.md
 ```
 
-这些文件默认被 `.gitignore` 排除，避免把真实数据或本地图表误提交到 public 仓库。
+这些文件默认被 `.gitignore` 排除，避免把真实数据、错误案例、预测明细或本地交接材料误提交到 public 仓库。
 
-## 3. 当前最终结果摘要
+## 3. 可公开 Demo 结果
+
+经人工确认不含原始文本、真实样本 ID、用户链接、cookie、token、预测明细或完整 processed 数据的结果，可以放在：
+
+```text
+outputs/demo/
+```
+
+当前 public-safe demo 包含：
+
+```text
+ablation_metrics.csv
+ablation_summary.csv
+ablation_f1_bar.png
+roc_all_compare.png
+cm_text_only.png
+cm_image_only.png
+cm_behavior_only.png
+cm_text_image.png
+cm_text_image_behavior.png
+README.md
+```
+
+这些文件可用于向老师和同学展示 Weibo 示例实验结果。它们是展示用静态结果，不代表别人 clone 仓库后无需下载数据即可复现最终指标。
+
+## 4. 当前最终结果摘要
 
 最终评估只使用 `split=test` 的 1465 条样本。五组消融结果如下：
 
@@ -53,7 +78,7 @@ ABC技术解释.md
 
 建议 D/E 在报告和 PPT 中把 `text_image_behavior` 作为最终方案展示，把 `behavior_only` 的高指标作为消融实验发现和局限性讨论。
 
-## 4. D/E 应引用哪些材料
+## 5. D/E 应引用哪些材料
 
 可以直接引用：
 
@@ -63,7 +88,7 @@ ABC技术解释.md
 4. 错误案例分析框架。
 5. A/B/C 技术解释。
 
-本地可引用但不要提交 GitHub 的材料：
+本地可引用但不要直接提交 GitHub 的材料：
 
 1. 最终指标表。
 2. F1 柱状图。
@@ -71,7 +96,9 @@ ABC技术解释.md
 4. 混淆矩阵。
 5. 真实但已脱敏的错误案例。
 
-## 5. 最终复现命令
+其中，前 4 类如果只包含汇总指标和图表，可以同步到 `outputs/demo/` 公开展示；错误案例必须先人工脱敏或改写成合成案例。
+
+## 6. 最终复现命令
 
 ```powershell
 uv run python src/train_text_baseline.py
@@ -89,6 +116,6 @@ uv run python verify_all.py
 1. `verify_all.py` 退出码为 0。
 2. `outputs/metrics/ablation_metrics.csv` 有 5 个模型组。
 3. `outputs/figures/` 有 F1 柱状图、ROC 图和 5 张混淆矩阵。
-4. `git status --short` 不出现真实数据、模型权重、预测文件或图表。
+4. `git status --short` 不出现真实数据、模型权重、预测明细或错误案例。
 
 如果复现机器没有 NVIDIA CUDA，把 `--device cuda` 改成 `--device auto` 或 `--device cpu`；模型权重允许从 Hugging Face / PyTorch 官方源下载，但缓存不进入 Git。

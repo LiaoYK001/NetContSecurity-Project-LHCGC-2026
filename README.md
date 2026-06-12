@@ -75,6 +75,8 @@ uv run python verify_all.py
 
 本项目本地最终指标基于 7723 条 processed 样本。其他人如果使用不同下载版本、不同清洗方式或其他数据集，指标可能不同，但只要转换成同样的 CSV 合同，就可以复现本仓库的数据处理、训练、融合、消融和评估流程。数据下载、字段格式和小样例见 [data/README.md](data/README.md)。
 
+已经人工确认不含敏感样本内容的 Weibo 示例结果放在 [outputs/demo/](outputs/demo/README.md)。这里包含汇总指标和图表，可用于向老师和同学展示项目 demo；完整数据、预测明细和错误案例仍不提交。
+
 ## Repository Guide
 
 ```text
@@ -84,6 +86,8 @@ uv run python verify_all.py
 │   ├── README.md
 │   ├── processed/README.md
 │   └── sample/                            ← 脱敏字段样例
+├── outputs/
+│   └── demo/                              ← public-safe 示例指标和图表
 ├── document/
 │   ├── 网络内容安全任务概述.md
 │   ├── [Google-Gemini]网络安全研究分工参考.md
@@ -113,12 +117,12 @@ uv run python verify_all.py
 data/raw/          # 原始公开数据或爬虫输出，本地保存
 data/processed/    # 清洗后的训练数据，本地保存
 models/            # 本地模型权重
-outputs/           # 指标、图表、预测结果
+outputs/           # 本地指标、图表、预测结果；仅 demo 子目录可公开
 src/               # 数据处理、训练、推理、评估代码
 tmp/               # 本地下载的公开数据集或临时数据
 ```
 
-这些数据、模型和输出目录已经在 `.gitignore` 中排除；只有 README、字段说明和 `data/sample/` 脱敏样例可提交。
+这些数据、模型和输出目录已经在 `.gitignore` 中排除；只有 README、字段说明、`data/sample/` 脱敏样例和 `outputs/demo/` public-safe 示例结果可提交。
 
 ## Team Workflow
 
@@ -152,7 +156,8 @@ tmp/               # 本地下载的公开数据集或临时数据
 - 未脱敏原始数据、爬虫原始 HTML、二维码、手机号、邮箱、头像、主页链接。
 - 训练 checkpoint、模型权重、日志缓存、大体积数据集。
 - 老师、同学或平台用户的个人隐私信息。
-- 完整 `tmp/`、完整 `data/processed/*.csv`、完整 `outputs/` 结果。
+- 完整 `tmp/`、完整 `data/processed/*.csv`、完整 `outputs/` 本地结果。
+- 样本级预测 CSV、错误案例 CSV、真实微博 ID 或原文片段。
 
 可以提交：
 
@@ -160,6 +165,7 @@ tmp/               # 本地下载的公开数据集或临时数据
 - 小体积实验图表、报告草稿、PPT 素材。
 - `.env.example` 这类只含占位符的示例文件。
 - `data/sample/` 中的小体积脱敏样例。
+- `outputs/demo/` 中已人工确认不含敏感样本内容的汇总指标和图表。
 
 ## Development Notes
 
