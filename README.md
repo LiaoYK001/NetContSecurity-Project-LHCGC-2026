@@ -170,6 +170,12 @@ tmp/               # 本地下载的公开数据集或临时数据
 - `data/sample/` 中的小体积脱敏样例。
 - `outputs/demo/` 中已人工确认不含敏感样本内容的汇总指标和图表。
 
+## Security Notes
+
+GitHub 可能提示 PyTorch 的 `torch.jit.script` memory corruption 安全告警。当前项目保留 `torch` / `torchvision` 是为了复现 BERT 和 ResNet 特征提取流程，但项目代码没有调用 `torch.jit.script` 或 TorchScript 加载逻辑。该告警目前显示没有 patched version，因此不建议盲目改依赖版本；当前缓解方式是只使用官方预训练模型、不加载不可信权重、不提交模型缓存，并等待 PyTorch 上游修复后再升级。
+
+详细说明见 [SECURITY.md](SECURITY.md)。
+
 ## Development Notes
 
 建议每个功能分支只做一类事情，例如：
